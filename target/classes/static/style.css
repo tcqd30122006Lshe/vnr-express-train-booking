@@ -1,0 +1,268 @@
+:root {
+  --primary: #ff5722; /* Màu Cam thương hiệu */
+  --primary-dark: #e64a19; /* Màu Cam đậm khi Hover */
+  --dark-bg: #121212; /* Màu Đen nền chính */
+  --surface-dark: #1e1e1e; /* Màu Đen xám cho Khung/Card */
+  --white: #ffffff; /* Màu Trắng */
+  --gray-text: #9e9e9e; /* Màu Xám chữ phụ */
+}
+
+* {
+  box-sizing: border-box; /* Giúp Padding không làm vỡ kích thước phần tử */
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--dark-bg);
+  color: var(--white);
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  line-height: 1.6;
+}
+
+/* ==========================================
+   HEADER & NAVBAR STYLES (FLEXBOX)
+   ========================================== */
+
+/* 1. Thẻ <header>: Đền màu đen xám, viền dưới màu Cam, dùng Flexbox đẩy Logo bên trái, Nav bên phải */
+.site-header {
+  background-color: var(--surface-dark);
+  border-bottom: 2px solid var(--primary);
+  padding: 15px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+/*Trang trí logo*/
+.logo-link {
+  color: var(--white);
+  text-decoration: none;
+  font-size: 24px;
+  font-weight: bold;
+}
+/* 3. Thẻ <nav>: Dùng Flexbox xếp Menu và Nút bấm nằm ngang hàng */
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+/* 4. Thẻ <ul>: Bỏ dấu chấm đen, dùng Flexbox xếp 3 menu nằm ngang */
+.nav-list {
+  display: flex;
+  list-style: none;
+  gap: 20px;
+}
+
+/* 5. Thẻ <a> trong Menu */
+.nav-link {
+  color: var(--gray-text);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+  font-size: 20px;
+}
+
+/* Thẻ <a> đổi màu */
+.nav-link:hover {
+  color: var(--white);
+}
+
+/* 6. Khối chứa 2 nút bấm Đăng nhập & Đăng ký */
+.auth-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+/* ==========================================
+   BUTTON SYSTEM
+   ========================================== */
+/* 1. Class chung cho mọi Nút bấm trên website */
+.btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+/* 2. Nút Cam VNR chính (Primary) */
+.btn-primary {
+  background-color: var(--primary);
+  color: var(--white);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-2px);
+}
+
+/* 3. Nút Viền trong suốt (Outline) */
+.btn-outline {
+  background-color: transparent;
+  border: 1px solid var(--gray-text);
+  color: var(--white);
+}
+
+/* Hiệu ứng khi rê chuột vào Nút Viền */
+.btn-outline:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-2px);
+}
+
+/* ==========================================
+   HERO SECTION & SEARCH FORM STYLES
+   ========================================== */
+/* 1. Khối Banner Hero chính */
+.hero-section {
+  padding: 50px 40px;
+  text-align: center;
+}
+.hero-section h2 {
+  font-size: 36px;
+  color: var(--primary);
+  margin-bottom: 10px;
+}
+
+.hero-section p {
+  color: var(--gray-text);
+  font-size: 14px;
+  margin-bottom: 30px;
+}
+
+/* 2. Khung Card Form Tìm Kiếm nổi bật */
+.search-card {
+  background-color: var(--surface-dark);
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 500px;
+  margin: 0 auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  text-align: left;
+}
+/* 3. Khung bao từng cặp Label + Input */
+.form-group {
+  margin-bottom: 20px;
+}
+
+/* 4. Nhãn chữ của ô nhập */
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-text);
+  /* Viết hoa nhãn chữ */
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+/* 5. Ô nhập liệu (<select> và <input>) */
+.form-control {
+  width: 100%;
+  padding: 12px 14px;
+  background-color: var(--dark-bg);
+  color: var(--white);
+  border: 1px solid #444;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+/* Hiệu ứng khi nhấp chuột chọn ô nhập liệu */
+.form-control:focus {
+  border-color: var(--primary);
+}
+
+/* Chỉnh độ rộng nút Tìm chuyến tàu trong form */
+.search-card .btn-primary {
+  width: 100%;
+  padding: 14px;
+  margin-top: 10px;
+  font-size: 16px;
+}
+
+/* ==========================================
+   POPULAR ROUTES SECTION (CSS GRID)
+   ========================================== */
+
+.popular-routes-section {
+  padding: 60px 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.popular-routes-section h2 {
+  font-size: 28px;
+  color: var(--white);
+  margin-bottom: 30px;
+}
+.popular-routes-section p {
+  color: var(--gray-text);
+  margin-bottom: 30px;
+}
+.routes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+/* Trang trí Thẻ Tuyến Đường (.route-card) */
+.route-card {
+  background-color: var(--surface-dark);
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: left;
+}
+
+.route-card h3 {
+  font-size: 18px;
+  color: var(--white);
+  margin-bottom: 8px;
+}
+
+.route-card p {
+  font-size: 18px;
+  color: var(--white);
+  margin-bottom: 4px;
+}
+/* Hiệu ứng di chuột vào Thẻ Tuyến Đường */
+
+.route-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(255, 87, 34, 0.15);
+}
+
+/* ==========================================
+   FOOTER STYLES
+   ========================================== */
+
+.site-footer {
+  background-color: #0a0a0a;
+  border-top: 1px solid #222;
+  padding: 30px 40px;
+  text-align: center;
+  color: var(--gray-text);
+  font-size: 13px;
+  margin-top: 50px;
+}
+
+.site-footer p {
+  margin-bottom: 8px;
+}
+.site-footer a {
+  color: var(--gray-text);
+  text-decoration: none;
+  margin: 0 10px;
+}
+.site-footer a:hover {
+  color: var(--primary);
+}
