@@ -1,5 +1,4 @@
-<!doctype html>
-<html lang="vi">
+<!DOCTYPE html>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,7 +6,7 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <!-- Sẵn sàng cho bài học Frontend từ đầu -->
+    <!-- SITE HEADER & NAVIGATION -->
     <header class="site-header">
       <h1 class="site-logo">
         <a href="#" class="logo-link">VNR Express</a>
@@ -15,109 +14,148 @@
       <nav class="site-nav">
         <ul class="nav-list">
           <li class="nav-item"><a href="#" class="nav-link">Trang chủ</a></li>
-          <li class="nav-item">
-            <a href="#" class="nav-link">Tra cứu chuyến tàu</a>
-          </li>
-          <li class="nav-item">
-            <a href="#" class="nav-link">Đơn đặt vé của tôi</a>
-          </li>
+          <li class="nav-item"><a href="#" class="nav-link">Tra cứu chuyến tàu</a></li>
+          <li class="nav-item"><a href="#my-bookings-section" class="nav-link">Đơn đặt vé của tôi</a></li>
         </ul>
-        <!-- Khối nút bấm tài khoản -->
         <div class="auth-buttons">
-          <button type="button" id="login-btn" class="btn btn-outline">
-            Đăng Nhập
-          </button>
-          <button type="button" id="register-btn" class="btn btn-primary">
-            Đăng Ký
-          </button>
+          <button type="button" id="login-btn" class="btn btn-outline">Đăng Nhập</button>
+          <button type="button" id="register-btn" class="btn btn-primary">Đăng Ký</button>
         </div>
       </nav>
     </header>
 
-    <!--Main    Section -->
+    <!-- MAIN CONTENT AREA -->
     <main class="site-main">
+      <!-- HERO & SEARCH SECTION -->
       <section class="hero-section">
-        <h2>Hành Trình An toàn ,Kết Nối Trọn Vẹn</h2>
+        <h2>Hành Trình An Toàn, Kết Nối Trọn Vẹn</h2>
         <p>Đặt vé tàu hỏa Bắc Nam trực tuyến nhanh chóng và tiện lợi</p>
 
-        <!-- 1. Ô Chọn Ga Đi -->
         <form id="search-train-form" class="search-card">
           <div class="form-group">
             <label for="origin-select" class="form-label">Ga đi</label>
-
             <select id="origin-select" name="origin" class="form-control">
-              <option value="HAN">Ga Hà Nội</option>
-              <option value="DAN">Ga Đà Nẵng</option>
-              <option value="SGO">Ga Sài Gòn</option>
+              <option value="">--Chọn Ga Khởi Hành--</option>
             </select>
           </div>
 
-          <!-- 2. Ô Chọn Ga Đến (Bạn tự gõ tiếp tương tự nhé) -->
           <div class="form-group">
             <label for="dest-select" class="form-label">Ga đến</label>
-
             <select id="dest-select" name="destination" class="form-control">
-              <option value="HAN">Ga Hà Nội</option>
-              <option value="DAN">Ga Đà Nẵng</option>
-              <option value="SGO">Ga Sài Gòn</option>
+              <option value="">--Chọn Ga Đến--</option>
             </select>
           </div>
-          <!-- 3. Ô Chọn Ngày Đi (dùng <input type="date">) -->
+
           <div class="form-group">
-            <label for="depart-date-select" class="form-label">
-              Ngày khởi hành
-            </label>
-            <input
-              type="date"
-              name="orgin-date"
-              class="form-control"
-              id="depart-date-select"
-            />
+            <label for="depart-date-select" class="form-label">Ngày khởi hành</label>
+            <input type="date" id="depart-date-select" class="form-control" />
           </div>
-          <!-- 4. Nút Bấm Tìm Chuyến Tàu (<button type="submit">) -->
-          <button class="btn btn-primary" type="submit" id="search-submit-btn">
+
+          <button type="submit" id="search-submit-btn" class="btn btn-primary btn-block">
             Tìm chuyến tàu
           </button>
         </form>
+
+        <div id="search-results-container" class="search-results-section"></div>
       </section>
 
-      <!--Dựng khối tuyến đường phổ biến-->
-
+      <!-- POPULAR ROUTES SECTION -->
       <section class="popular-routes-section">
         <h2>Tuyến đường phổ biến</h2>
-
         <p>Khám phá các hành trình đẹp nhất dọc miền đất nước</p>
         <div class="routes-grid">
           <article class="route-card">
-            <h3>Hà Nội-> Đà Nẵng</h3>
+            <h3>Hà Nội ➔ Đà Nẵng</h3>
             <p>Tàu SE1 | Thời gian: ~14 giờ</p>
-            <p>Giá vé 750.000 VNĐ</p>
+            <p class="route-price">Giá vé 750.000 VNĐ</p>
           </article>
           <article class="route-card">
             <h3>Hà Nội ➔ Sài Gòn</h3>
             <p>Tàu SE3 | Thời gian: ~32 giờ</p>
-            <p>Giá từ 1.250.000 VNĐ</p>
+            <p class="route-price">Giá từ 1.250.000 VNĐ</p>
           </article>
           <article class="route-card">
             <h3>Đà Nẵng ➔ Sài Gòn</h3>
             <p>Tàu SE7 | Thời gian: ~18 giờ</p>
-            <p>Giá từ 680.000 VNĐ</p>
+            <p class="route-price">Giá từ 680.000 VNĐ</p>
           </article>
+        </div>
+      </section>
+
+      <!-- KHỐI QUẢN LÝ ĐƠN VÉ CÁ NHÂN (TASK 6) -->
+      <section id="my-bookings-section" class="popular-routes-section" style="margin-top: 40px;">
+        <h2>🎟️ Đơn Đặt Vé Của Tôi</h2>
+        <p>Quản lý và tra cứu thông tin các vé tàu bạn đã đặt thành công</p>
+        
+        <div id="my-bookings-container" style="max-width: 800px; margin: 20px auto 0 auto; text-align: left;">
+          <div class="empty-state" style="padding: 20px; background: #1E1E1E; border-radius: 8px; text-align: center;">
+            <p>🔒 Vui lòng Đăng nhập để xem danh sách vé đã đặt của bạn.</p>
+          </div>
         </div>
       </section>
     </main>
 
-    <!--Footer-->
-
+    <!-- FOOTER -->
     <footer class="site-footer">
       <p>Copyright &copy; 2026 VNR Express System. All Rights Reserved.</p>
       <p>Hotline Hỗ Trợ: 1900-1520 | Email: hotro@vnrexpress.vn</p>
-      <div>
+      <div class="footer-links">
         <a href="#">Quy định đổi trả vé</a>
         <a href="#">Hướng dẫn đặt vé</a>
         <a href="#">Câu hỏi thường gặp</a>
       </div>
     </footer>
+
+    <!-- LOGIN MODAL POPUP -->
+    <div id="login-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">Đăng nhập VNR Express</h3>
+          <button type="button" id="close-modal-btn" class="modal-close-btn">✕</button>
+        </div>
+        <form id="login-form">
+          <div class="form-group">
+            <label for="login-username" class="form-label">Tên Đăng Nhập</label>
+            <input type="text" id="login-username" class="form-control" placeholder="Nhập admin..." required />
+          </div>
+          <div class="form-group">
+            <label for="login-password" class="form-label">Mật Khẩu</label>
+            <input type="password" id="login-password" class="form-control" placeholder="Nhập admin123..." required />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Đăng Nhập</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- BOOKING MODAL POPUP -->
+    <div id="booking-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">🎟️ Đặt Vé Tàu VNR Express</h3>
+          <button type="button" id="close-booking-modal-btn" class="modal-close-btn">✕</button>
+        </div>
+        <form id="booking-form">
+          <input type="hidden" id="booking-trip-id" />
+          <div class="form-group">
+            <label for="customer-name" class="form-label">Họ và Tên Hành Khách</label>
+            <input type="text" id="customer-name" class="form-control" placeholder="Nhập Nguyễn Văn A..." required />
+          </div>
+          <div class="form-group">
+            <label for="customer-phone" class="form-label">Số Điện Thoại (10 số)</label>
+            <input type="tel" id="customer-phone" class="form-control" placeholder="Nhập 0987654321..." pattern="[0-9]{10}" required />
+          </div>
+          <div class="form-group">
+            <label for="customer-email" class="form-label">Email Nhận Vé</label>
+            <input type="email" id="customer-email" class="form-control" placeholder="Nhập email@gmail.com..." required />
+          </div>
+          <div class="form-group">
+            <label for="passenger-idcard" class="form-label">Số CCCD / Passport</label>
+            <input type="text" id="passenger-idcard" class="form-control" placeholder="Nhập 012345678901..." required />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Xác Nhận Đặt Vé</button>
+        </form>
+      </div>
+    </div>
 
     <script src="app.js"></script>
   </body>
