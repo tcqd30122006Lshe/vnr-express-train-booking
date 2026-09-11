@@ -1,15 +1,16 @@
 <!DOCTYPE html>
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>VNR Express - System Starter</title>
+    <title>VNR Express - Hệ Thống Đặt Vé Tàu Hỏa Bắc Nam</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <!-- SITE HEADER & NAVIGATION -->
     <header class="site-header">
       <h1 class="site-logo">
-        <a href="#" class="logo-link">VNR Express</a>
+        <a href="#" class="logo-link">🚆 VNR Express</a>
       </h1>
       <nav class="site-nav">
         <ul class="nav-list">
@@ -34,14 +35,14 @@
         <form id="search-train-form" class="search-card">
           <div class="form-group">
             <label for="origin-select" class="form-label">Ga đi</label>
-            <select id="origin-select" name="origin" class="form-control">
+            <select id="origin-select" name="origin" class="form-control" required>
               <option value="">--Chọn Ga Khởi Hành--</option>
             </select>
           </div>
 
           <div class="form-group">
             <label for="dest-select" class="form-label">Ga đến</label>
-            <select id="dest-select" name="destination" class="form-control">
+            <select id="dest-select" name="destination" class="form-control" required>
               <option value="">--Chọn Ga Đến--</option>
             </select>
           </div>
@@ -52,7 +53,7 @@
           </div>
 
           <button type="submit" id="search-submit-btn" class="btn btn-primary btn-block">
-            Tìm chuyến tàu
+            🔍 Tìm chuyến tàu
           </button>
         </form>
 
@@ -82,13 +83,13 @@
         </div>
       </section>
 
-      <!-- KHỐI QUẢN LÝ ĐƠN VÉ CÁ NHÂN (TASK 6) -->
-      <section id="my-bookings-section" class="popular-routes-section" style="margin-top: 40px;">
+      <!-- KHỐI QUẢN LÝ ĐƠN VÉ CÁ NHÂN -->
+      <section id="my-bookings-section" class="popular-routes-section my-bookings-section">
         <h2>🎟️ Đơn Đặt Vé Của Tôi</h2>
         <p>Quản lý và tra cứu thông tin các vé tàu bạn đã đặt thành công</p>
         
-        <div id="my-bookings-container" style="max-width: 800px; margin: 20px auto 0 auto; text-align: left;">
-          <div class="empty-state" style="padding: 20px; background: #1E1E1E; border-radius: 8px; text-align: center;">
+        <div id="my-bookings-container" class="my-bookings-container">
+          <div class="empty-state">
             <p>🔒 Vui lòng Đăng nhập để xem danh sách vé đã đặt của bạn.</p>
           </div>
         </div>
@@ -110,7 +111,7 @@
     <div id="login-modal" class="modal-overlay">
       <div class="modal-card">
         <div class="modal-header">
-          <h3 class="modal-title">Đăng nhập VNR Express</h3>
+          <h3 class="modal-title">🔐 Đăng nhập VNR Express</h3>
           <button type="button" id="close-modal-btn" class="modal-close-btn">✕</button>
         </div>
         <form id="login-form">
@@ -127,31 +128,74 @@
       </div>
     </div>
 
-    <!-- BOOKING MODAL POPUP -->
+    <!-- BOOKING MODAL POPUP VỚI SƠ ĐỒ GHẾ -->
     <div id="booking-modal" class="modal-overlay">
-      <div class="modal-card">
+      <div class="modal-card modal-card-large">
         <div class="modal-header">
           <h3 class="modal-title">🎟️ Đặt Vé Tàu VNR Express</h3>
           <button type="button" id="close-booking-modal-btn" class="modal-close-btn">✕</button>
         </div>
+
         <form id="booking-form">
           <input type="hidden" id="booking-trip-id" />
+          <input type="hidden" id="selected-seat-id" />
+
+          <!-- CHỌN TOA TÀU -->
+          <div class="carriage-selector-section">
+            <label class="form-label">Chọn Toa Tàu:</label>
+            <div class="carriage-buttons">
+              <button type="button" class="btn-carriage active" data-carriage="1">Toa 1 (Ngồi mềm)</button>
+              <button type="button" class="btn-carriage" data-carriage="2">Toa 2 (Giường nằm)</button>
+            </div>
+          </div>
+
+          <!-- THANH CHÚ THÍCH GHẾ -->
+          <div class="seat-legend">
+            <div class="legend-item">
+              <span class="legend-box available"></span>
+              <span>Trống</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-box selected"></span>
+              <span>Đang chọn</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-box booked"></span>
+              <span>Đã đặt</span>
+            </div>
+          </div>
+
+          <!-- SƠ ĐỒ GHẾ TÀU ĐỘNG -->
+          <div id="seat-grid-container" class="seat-grid-container">
+            <!-- JavaScript sẽ render nút ghế vào đây -->
+          </div>
+
+          <!-- KHỐI TÍNH TIỀN ĐỘNG -->
+          <div class="booking-summary-bar">
+            <span>Ghế đã chọn: <strong id="selected-seat-display">Chưa chọn</strong></span>
+            <span class="total-price-text" id="total-price-display">0 VNĐ</span>
+          </div>
+
           <div class="form-group">
             <label for="customer-name" class="form-label">Họ và Tên Hành Khách</label>
             <input type="text" id="customer-name" class="form-control" placeholder="Nhập Nguyễn Văn A..." required />
           </div>
+
           <div class="form-group">
             <label for="customer-phone" class="form-label">Số Điện Thoại (10 số)</label>
             <input type="tel" id="customer-phone" class="form-control" placeholder="Nhập 0987654321..." pattern="[0-9]{10}" required />
           </div>
+
           <div class="form-group">
             <label for="customer-email" class="form-label">Email Nhận Vé</label>
             <input type="email" id="customer-email" class="form-control" placeholder="Nhập email@gmail.com..." required />
           </div>
+
           <div class="form-group">
             <label for="passenger-idcard" class="form-label">Số CCCD / Passport</label>
             <input type="text" id="passenger-idcard" class="form-control" placeholder="Nhập 012345678901..." required />
           </div>
+
           <button type="submit" class="btn btn-primary btn-block">Xác Nhận Đặt Vé</button>
         </form>
       </div>

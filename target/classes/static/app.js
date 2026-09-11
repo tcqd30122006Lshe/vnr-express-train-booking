@@ -35,9 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loginForm.addEventListener('submit', handleLogin);
   }
 
-  const closeBookingModalBtn = document.getElementById(
-    'close-booking-modal-btn',
-  );
+  const closeBookingModalBtn = document.getElementById('close-booking-modal-btn');
   const bookingModal = document.getElementById('booking-modal');
   const bookingForm = document.getElementById('booking-form');
 
@@ -50,6 +48,19 @@ document.addEventListener('DOMContentLoaded', () => {
   if (bookingForm) {
     bookingForm.addEventListener('submit', handleCreateBooking);
   }
+
+  // Bắt sự kiện chuyển Toa tàu trong Modal Đặt Vé
+  const carriageBtns = document.querySelectorAll('.btn-carriage');
+  carriageBtns.forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      carriageBtns.forEach((b) => b.classList.remove('active'));
+      e.target.classList.add('active');
+
+      const tripId = document.getElementById('booking-trip-id').value;
+      const carriageId = e.target.getAttribute('data-carriage') || 1;
+      loadCarriageSeatMap(tripId, carriageId);
+    });
+  });
 });
 
 // ==========================================
@@ -123,14 +134,14 @@ function renderSearchResults(trips) {
 
   if (!trips || trips.length === 0) {
     container.innerHTML = `
-      <div class="empty-state" style="margin-top: 20px; padding: 20px; background: #1E1E1E; border-radius: 8px;">
+      <div class="empty-state">
         <p>🚫 Không tìm thấy chuyến tàu nào phù hợp cho hành trình này.</p>
       </div>
     `;
     return;
   }
 
-  let html = `<h3 style="margin-top: 30px; margin-bottom: 15px; color: var(--primary);">🎉 Chuyến Tàu Phù Hợp</h3>`;
+  let html = `<h3 class="results-title">🎉 Chuyến Tàu Phù Hợp</h3>`;
 
   trips.forEach((trip) => {
     const formattedPrice = trip.basePrice
@@ -142,16 +153,16 @@ function renderSearchResults(trips) {
       : trip.routeName || 'Tàu Tốc Hành Bắc Nam';
 
     html += `
-      <article class="trip-card" style="margin-bottom: 15px; background: #1E1E1E; padding: 20px; border-radius: 8px; border-left: 4px solid var(--primary); text-align: left;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
+      <article class="trip-card">
+        <div class="trip-card-content">
           <div>
-            <h4 style="font-size: 18px; color: #FFF;">🚆 ${trainCode} - ${trainName}</h4>
-            <p style="color: #9E9E9E; font-size: 14px; margin-top: 5px;">
+            <h4 class="trip-train-title">🚆 ${trainCode} - ${trainName}</h4>
+            <p class="trip-time-info">
               Khởi hành: <strong>${trip.departureTime ? trip.departureTime.substring(11, 16) : '08:00'}</strong> ➔ Đến: <strong>${trip.arrivalTime ? trip.arrivalTime.substring(11, 16) : '20:30'}</strong>
             </p>
           </div>
-          <div style="text-align: right;">
-            <p style="color: var(--primary); font-size: 18px; font-weight: bold;">${formattedPrice} VNĐ</p>
+          <div class="trip-price-wrapper">
+            <p class="trip-price-text">${formattedPrice} VNĐ</p>
             <button type="button" class="btn btn-primary" onclick="openBookingModal(${trip.id})">
               Chọn chuyến
             </button>
@@ -219,7 +230,6 @@ function checkLoginState() {
       <span class="user-badge">👤 ${username}</span>
       <button type="button" class="btn btn-outline" onclick="handleLogout()">Đăng Xuất</button>
     `;
-    // 👇 GỌI HÀM loadMyBookings() KHI ĐỐI TƯỢNG ĐÃ ĐĂNG NHẬP (TASK 6) 👇
     if (typeof loadMyBookings === 'function') {
       loadMyBookings();
     }
@@ -242,7 +252,7 @@ function handleLogout() {
 }
 
 // ==========================================
-// 7. MỞ POPUP ĐẶT VÉ (TASK 5)
+// 7. MỞ POPUP ĐẶT VÉ VỚI SƠ ĐỒ GHẾ TÀU (PHASE 4)
 // ==========================================
 function openBookingModal(tripId) {
   const token = localStorage.getItem('vnr_jwt_token');
@@ -253,11 +263,18 @@ function openBookingModal(tripId) {
   }
 
   document.getElementById('booking-trip-id').value = tripId;
+  document.getElementById('selected-seat-id').value = '';
+  document.getElementById('selected-seat-display').innerText = 'Chưa chọn';
+  document.getElementById('total-price-display').innerText = '0 VNĐ';
+
   document.getElementById('booking-modal').style.display = 'flex';
+
+  // Nạp sơ đồ ghế mặc định cho Toa 1
+  loadCarriageSeatMap(tripId, 1);
 }
 
 // ==========================================
-// 8. TẠO ĐƠN ĐẶT VÉ (TASK 5)
+// 8. TẠO ĐƠN ĐẶT VÉ VỚI GHẾ ĐÃ CHỌN (PHASE 4)
 // ==========================================
 async function handleCreateBooking(event) {
   event.preventDefault();
@@ -265,6 +282,12 @@ async function handleCreateBooking(event) {
   const token = localStorage.getItem('vnr_jwt_token');
   if (!token) {
     alert('🔒 Phiên đăng nhập đã hết hạn! Vui lòng đăng nhập lại.');
+    return;
+  }
+
+  const selectedSeatId = document.getElementById('selected-seat-id').value;
+  if (!selectedSeatId) {
+    alert('⚠️ Vui lòng chọn 1 ghế tàu trên sơ đồ trước khi bấm Xác Nhận Đặt Vé!');
     return;
   }
 
@@ -277,12 +300,8 @@ async function handleCreateBooking(event) {
   const originSelect = document.getElementById('origin-select');
   const destSelect = document.getElementById('dest-select');
 
-  const startId =
-    originSelect && originSelect.selectedIndex > 0
-      ? originSelect.selectedIndex
-      : 1;
-  const endId =
-    destSelect && destSelect.selectedIndex > 0 ? destSelect.selectedIndex : 5;
+  const startId = originSelect && originSelect.selectedIndex > 0 ? originSelect.selectedIndex : 1;
+  const endId = destSelect && destSelect.selectedIndex > 0 ? destSelect.selectedIndex : 5;
 
   const bookingData = {
     customerName: name,
@@ -293,7 +312,7 @@ async function handleCreateBooking(event) {
     endStationId: Number(endId),
     tickets: [
       {
-        seatId: Math.floor(Math.random() * 50) + 2,
+        seatId: Number(selectedSeatId),
         passengerName: name,
         passengerIdCard: idCard,
       },
@@ -315,9 +334,7 @@ async function handleCreateBooking(event) {
     const data = await response.json();
 
     if (response.ok && data.result) {
-      alert(
-        `🎉 ĐẶT VÉ THÀNH CÔNG!\nMã đơn đặt vé của bạn là: ${data.result.bookingCode || 'VNR-' + Date.now()}`,
-      );
+      alert(`🎉 ĐẶT VÉ THÀNH CÔNG!\nMã đơn đặt vé của bạn là: ${data.result.bookingCode || 'VNR-' + Date.now()}`);
       document.getElementById('booking-modal').style.display = 'none';
       document.getElementById('booking-form').reset();
       if (typeof loadMyBookings === 'function') {
@@ -333,21 +350,104 @@ async function handleCreateBooking(event) {
 }
 
 // ==========================================
-// 9. TẢI DANH SÁCH VÉ CỦA TÔI (TASK 6 - BẠN TỰ TAY GÕ HÀM loadMyBookings DƯỚI ĐÂY)
+// 9. NẠP SƠ ĐỒ GHẾ TÀU ĐỘNG TỪ BACKEND (PHASE 4)
 // ==========================================
-// 1. Hàm nạp danh sách Đơn vé cá nhân từ CSDL MySQL thông qua Spring Boot
+async function loadCarriageSeatMap(tripId, carriageId) {
+  const container = document.getElementById('seat-grid-container');
+  if (!container) return;
+
+  container.innerHTML = '<p style="grid-column: span 4; color: var(--primary); text-align: center;">⏳ Đang tải sơ đồ ghế...</p>';
+
+  const originSelect = document.getElementById('origin-select');
+  const destSelect = document.getElementById('dest-select');
+
+  const startId = originSelect && originSelect.selectedIndex > 0 ? originSelect.selectedIndex : 1;
+  const endId = destSelect && destSelect.selectedIndex > 0 ? destSelect.selectedIndex : 5;
+
+  try {
+    const url = `${API_BASE}/trips/${tripId || 1}/carriages/${carriageId}/seat-map?originStationId=${startId}&destStationId=${endId}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    let seatList = [];
+    if (data.result && data.result.seats) {
+      seatList = data.result.seats;
+    } else {
+      for (let i = 1; i <= 28; i++) {
+        seatList.push({
+          seatId: (carriageId - 1) * 28 + i,
+          seatNumber: i,
+          status: i % 7 === 0 ? 'BOOKED' : 'AVAILABLE',
+        });
+      }
+    }
+
+    let html = '';
+    seatList.forEach((seat) => {
+      const isBooked = seat.status === 'BOOKED';
+      const disabledAttr = isBooked ? 'disabled' : '';
+      const seatClass = isBooked ? 'seat-btn booked' : 'seat-btn available';
+
+      html += `
+        <button type="button" class="${seatClass}" ${disabledAttr} onclick="selectSeat(this, ${seat.seatId}, ${seat.seatNumber}, 750000)">
+          ${seat.seatNumber}
+        </button>
+      `;
+    });
+
+    container.innerHTML = html;
+  } catch (error) {
+    console.error('Lỗi nạp sơ đồ ghế:', error);
+    let html = '';
+    for (let i = 1; i <= 28; i++) {
+      const isBooked = i % 5 === 0;
+      html += `
+        <button type="button" class="seat-btn ${isBooked ? 'booked' : 'available'}" ${isBooked ? 'disabled' : ''} onclick="selectSeat(this, ${i}, ${i}, 750000)">
+          ${i}
+        </button>
+      `;
+    }
+    container.innerHTML = html;
+  }
+}
+
+// ==========================================
+// 10. CHỌN GHẾ TÀU & TÍNH TỔNG TIỀN ĐỘNG (PHASE 4)
+// ==========================================
+function selectSeat(buttonElem, seatId, seatNumber, pricePerSeat) {
+  const allSeatBtns = document.querySelectorAll('.seat-btn.available, .seat-btn.selected');
+  allSeatBtns.forEach((btn) => {
+    btn.classList.remove('selected');
+    btn.classList.add('available');
+  });
+
+  buttonElem.classList.remove('available');
+  buttonElem.classList.add('selected');
+
+  document.getElementById('selected-seat-id').value = seatId;
+  document.getElementById('selected-seat-display').innerText = `Ghế số ${seatNumber}`;
+
+  const formattedPrice = Number(pricePerSeat).toLocaleString('vi-VN');
+  document.getElementById('total-price-display').innerText = `${formattedPrice} VNĐ`;
+}
+
+// ==========================================
+// 11. TẢI DANH SÁCH VÉ CỦA TÔI (TASK 6)
+// ==========================================
 async function loadMyBookings() {
   const token = localStorage.getItem('vnr_jwt_token');
   const container = document.getElementById('my-bookings-container');
   if (!container) return;
+
   if (!token) {
     container.innerHTML = `
-      <div class="empty-state" style="padding: 20px; background: #1E1E1E; border-radius: 8px; text-align: center;">
+      <div class="empty-state">
         <p>🔒 Vui lòng Đăng nhập để xem danh sách vé đã đặt của bạn.</p>
       </div>
     `;
     return;
   }
+
   try {
     const response = await fetch(`${API_BASE}/bookings`, {
       method: 'GET',
@@ -355,60 +455,70 @@ async function loadMyBookings() {
         Authorization: `Bearer ${token}`,
       },
     });
+
     const data = await response.json();
     const bookings = data.result || [];
+
     if (!bookings || bookings.length === 0) {
       container.innerHTML = `
-        <div class="empty-state" style="padding: 20px; background: #1E1E1E; border-radius: 8px; text-align: center;">
+        <div class="empty-state">
           <p>🎟️ Bạn chưa có đơn đặt vé nào. Hãy chọn chuyến tàu và trải nghiệm ngay!</p>
         </div>
       `;
       return;
     }
+
     let html = '';
     bookings.forEach((item) => {
       const formattedTotal = item.totalAmount
         ? Number(item.totalAmount).toLocaleString('vi-VN')
         : '0';
+
       const isCancelled = item.status === 'CANCELLED';
-      const statusBadgeHTML = isCancelled
-        ? `<span style="background: rgba(244, 67, 54, 0.15); color: #F44336; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;">ĐÃ HỦY</span>`
-        : `<span style="background: rgba(76, 175, 80, 0.15); color: #4CAF50; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;">THÀNH CÔNG</span>`;
+      const statusClass = isCancelled ? 'booking-card cancelled' : 'booking-card';
+      const badgeClass = isCancelled ? 'booking-status-badge cancelled' : 'booking-status-badge';
+      const statusText = isCancelled ? 'ĐÃ HỦY' : 'THÀNH CÔNG';
+
       const cancelBtnHTML = isCancelled
         ? ''
-        : `<button type="button" class="btn btn-outline" style="border-color: #F44336; color: #F44336; margin-left: 10px;" onclick="handleCancelBooking('${item.bookingCode}')">
+        : `<button type="button" class="btn btn-outline btn-danger" onclick="handleCancelBooking('${item.bookingCode}')">
             🗑️ Hủy Vé
           </button>`;
+
       html += `
-        <article class="booking-card" style="background: #1E1E1E; border: 1px solid #333; border-left: 4px solid ${isCancelled ? '#F44336' : '#4CAF50'}; border-radius: 8px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+        <article class="${statusClass}">
           <div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <p style="color: var(--primary); font-weight: bold; font-size: 16px;">Mã vé: ${item.bookingCode}</p>
-              ${statusBadgeHTML}
+            <div class="booking-header-info">
+              <span class="booking-code-badge">Mã vé: ${item.bookingCode}</span>
+              <span class="${badgeClass}">${statusText}</span>
             </div>
-            <p style="color: #FFF; font-size: 14px; margin-top: 6px;">Hành khách: <strong>${item.customerName}</strong> (${item.customerPhone})</p>
-            <p style="color: #9E9E9E; font-size: 13px; margin-top: 2px;">Email: ${item.customerEmail}</p>
+            <p class="passenger-info">Hành khách: <strong>${item.customerName}</strong> (${item.customerPhone})</p>
+            <p class="passenger-email">Email: ${item.customerEmail}</p>
           </div>
-          <div style="text-align: right;">
-            <p style="color: var(--primary); font-weight: bold; font-size: 18px; margin-bottom: 6px;">${formattedTotal} VNĐ</p>
+          <div class="booking-action-wrapper">
+            <p class="booking-price">${formattedTotal} VNĐ</p>
             ${cancelBtnHTML}
           </div>
         </article>
       `;
     });
+
     container.innerHTML = html;
   } catch (error) {
     console.error('❌ Lỗi khi nạp danh sách vé:', error);
   }
 }
-// 2. Hàm gửi API Hủy Vé sang Backend Spring Boot (DELETE /api/v1/bookings/{bookingCode})
+
+// ==========================================
+// 12. HỦY ĐƠN VÉ (TASK 6)
+// ==========================================
 async function handleCancelBooking(bookingCode) {
   const token = localStorage.getItem('vnr_jwt_token');
   if (!token) return;
-  const confirmCancel = confirm(
-    `⚠️ Bạn có chắc chắn muốn HỦY đơn đặt vé mã ${bookingCode} không?`,
-  );
+
+  const confirmCancel = confirm(`⚠️ Bạn có chắc chắn muốn HỦY đơn đặt vé mã ${bookingCode} không?`);
   if (!confirmCancel) return;
+
   try {
     const response = await fetch(`${API_BASE}/bookings/${bookingCode}`, {
       method: 'DELETE',
@@ -416,6 +526,7 @@ async function handleCancelBooking(bookingCode) {
         Authorization: `Bearer ${token}`,
       },
     });
+
     if (response.ok) {
       alert(`✅ Đã hủy đơn đặt vé ${bookingCode} thành công!`);
       loadMyBookings();
