@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
 @RequestMapping("/api/v1/analytics")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)

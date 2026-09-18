@@ -87,9 +87,17 @@ public class TrainServiceImpl implements TrainService {
     }
 
     String determineSeatType(String carriageType, int seatNumber) {
-        if ("SLEEPER_4".equalsIgnoreCase(carriageType) || "SLEEPER_6".equalsIgnoreCase(carriageType)) {
+        if ("SLEEPER_6".equalsIgnoreCase(carriageType)) {
+            int mod = seatNumber % 3;
+            if (mod == 1) return "LOWER_BED";
+            if (mod == 2) return "MIDDLE_BED";
+            return "UPPER_BED";
+        } else if ("SLEEPER_4".equalsIgnoreCase(carriageType)) {
             return (seatNumber % 2 != 0) ? "LOWER_BED" : "UPPER_BED";
         }
-        return (seatNumber % 2 != 0) ? "WINDOW" : "AISLE";
+        
+        // Thường bố trí 4 ghế 1 hàng: Cửa sổ - Lối đi | Lối đi - Cửa sổ
+        int mod = seatNumber % 4;
+        return (mod == 1 || mod == 0) ? "WINDOW" : "AISLE";
     }
 }

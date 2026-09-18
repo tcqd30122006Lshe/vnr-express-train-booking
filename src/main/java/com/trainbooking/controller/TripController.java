@@ -24,6 +24,7 @@ public class TripController {
     TripService tripService;
 
     @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<TripResponse> createTrip(@RequestBody @Valid TripCreationRequest request) {
         return ApiResponse.<TripResponse>builder()
                 .code(1000)

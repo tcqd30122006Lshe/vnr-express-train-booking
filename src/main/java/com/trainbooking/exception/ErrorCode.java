@@ -23,6 +23,9 @@ public enum ErrorCode {
     USER_NOT_FOUND(5002, "Không tìm thấy người dùng", HttpStatus.NOT_FOUND),
     USERNAME_INVALID(5003, "Tên người dùng phải chứa ít nhất 4 ký tự", HttpStatus.BAD_REQUEST),
     PASSWORD_INVALID(5004, "Mật khẩu phải chứa ít nhất 6 ký tự", HttpStatus.BAD_REQUEST),
+    EMAIL_EXISTED(5005, "Email đã được sử dụng", HttpStatus.BAD_REQUEST),
+    PHONE_EXISTED(5006, "Số điện thoại đã được sử dụng", HttpStatus.BAD_REQUEST),
+    IDCARD_EXISTED(5007, "Căn cước công dân đã được sử dụng", HttpStatus.BAD_REQUEST),
     UNAUTHENTICATED(1006, "Chưa xác thực hoặc Token không hợp lệ", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(1007, "Bạn không có quyền truy cập chức năng này", HttpStatus.FORBIDDEN),
 
@@ -76,6 +79,7 @@ public enum ErrorCode {
     PASSENGER_IDCARD_BLANK(4009, "Số CCCD/CMND của hành khách không được để trống", HttpStatus.BAD_REQUEST),
     TICKET_NOT_FOUND(4010,"Không tìm thấy vé",HttpStatus.NOT_FOUND),
     TICKET_HAS_USED(4011,"Vé đã được sử dụng",HttpStatus.IM_USED),
+    CANCELLATION_TIME_EXPIRED(4012, "Không thể hủy vé trước giờ khởi hành dưới 4 tiếng hoặc tàu đã chạy", HttpStatus.BAD_REQUEST),
 
     // QR ErrorCodes ( 5000- )
     QR_DATA_NOT_FOUND(5000,"Dữ liệu của QrCode không có",HttpStatus.NOT_FOUND),

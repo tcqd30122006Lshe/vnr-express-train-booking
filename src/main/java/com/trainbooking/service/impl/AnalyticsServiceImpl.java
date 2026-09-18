@@ -27,21 +27,19 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     RouteRepository routeRepository;
 
     @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public RevenueReportResponse getRevenueReport(String startDate, String endDate) {
-        List<Booking> bookings = bookingRepository.findAll();
+        java.time.LocalDateTime start = java.time.LocalDate.parse(startDate).atStartOfDay();
+        java.time.LocalDateTime end = java.time.LocalDate.parse(endDate).atTime(23, 59, 59);
 
-        double totalRevenue = bookings.stream()
-                .filter(b -> "CONFIRMED".equalsIgnoreCase(b.getStatus()))
-                .mapToDouble(Booking::getTotalAmount)
-                .sum();
+        Double totalRevenue = bookingRepository.getTotalRevenue("CONFIRMED", start, end);
+        if (totalRevenue == null) totalRevenue = 0.0;
 
-        long totalBookings = bookings.stream()
-                .filter(b -> "CONFIRMED".equalsIgnoreCase(b.getStatus()))
-                .count();
+        Long totalBookings = bookingRepository.countTotalBookings("CONFIRMED", start, end);
+        if (totalBookings == null) totalBookings = 0L;
 
-        long totalTicketsSold = ticketRepository.findAll().stream()
-                .filter(t -> !"CANCELLED".equalsIgnoreCase(t.getStatus()))
-                .count();
+        Long totalTicketsSold = ticketRepository.countNonCancelledTicketsByDateRange(start, end);
+        if (totalTicketsSold == null) totalTicketsSold = 0L;
 
         return RevenueReportResponse.builder()
                 .totalRevenue(totalRevenue)
@@ -53,20 +51,17 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public List<RouteAnalyticsResponse> getTicketsByRouteReport() {
         List<Route> routes = routeRepository.findAll();
-        List<Ticket> allTickets = ticketRepository.findAll();
         List<RouteAnalyticsResponse> report = new ArrayList<>();
 
         for (Route route : routes) {
-            List<Ticket> routeTickets = allTickets.stream()
-                    .filter(t -> t.getTrip() != null && t.getTrip().getRoute() != null
-                            && t.getTrip().getRoute().getId().equals(route.getId())
-                            && !"CANCELLED".equalsIgnoreCase(t.getStatus()))
-                    .toList();
+            Long ticketsSold = ticketRepository.countNonCancelledTicketsByRoute(route.getId());
+            if (ticketsSold == null) ticketsSold = 0L;
 
-            long ticketsSold = routeTickets.size();
-            double revenue = routeTickets.stream().mapToDouble(Ticket::getPrice).sum();
+            Double revenue = ticketRepository.sumRevenueByRoute(route.getId());
+            if (revenue == null) revenue = 0.0;
 
             report.add(RouteAnalyticsResponse.builder()
                     .routeId(route.getId())

@@ -27,6 +27,7 @@ public class TicketServiceImpl implements TicketService {
 
 
     @Override
+    @Transactional(readOnly = true)
     public TicketResponse getTicketById(Long ticketId) {
         Ticket ticket=ticketRepository.findById(ticketId).orElseThrow(()-> new AppException(ErrorCode.TICKET_NOT_FOUND));
 
@@ -34,6 +35,7 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TicketResponse> getTicketsByBookingCode(String bookingCode) {
         if (!ticketRepository.findByBookingCode(bookingCode).isEmpty()) {
             return ticketRepository.findByBookingCode(bookingCode).stream().map(ticket -> mapToTicketResponse(ticket)).toList();
@@ -73,16 +75,21 @@ public class TicketServiceImpl implements TicketService {
             throw new AppException(ErrorCode.INVALID_KEY);
         }
         // 3. Tính khoảng thời gian từ bây giờ đến giờ tàu chạy (departureTime)
-        LocalDateTime now= LocalDateTime.now();
-        LocalDateTime departureTime=ticket.getTrip().getDepartureTime();
-
-        long hoursUntilDeparture= Duration.between(now,departureTime).toHours();
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime departureTime = ticket.getTrip().getDepartureTime();
 
         // 4. Kiểm tra điều kiện thời gian
-        if (hoursUntilDeparture<4){
-            throw new RuntimeException("Không thể hủy vé duowis 4 tiếng");
+        if (now.isAfter(departureTime)) {
+            throw new AppException(ErrorCode.CANCELLATION_TIME_EXPIRED);
         }
-        double feePercentage=(hoursUntilDeparture >= 24)? 0.10 :0.20;
+        
+        long hoursUntilDeparture = Duration.between(now, departureTime).toHours();
+
+        if (hoursUntilDeparture < 4) {
+            throw new AppException(ErrorCode.CANCELLATION_TIME_EXPIRED);
+        }
+        
+        double feePercentage = (hoursUntilDeparture >= 24) ? 0.10 : 0.20;
         double originPrice=ticket.getPrice();
         double cancellationFee=originPrice*feePercentage;
         double refundAmount=originPrice-cancellationFee;

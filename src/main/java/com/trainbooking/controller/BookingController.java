@@ -31,7 +31,8 @@ public class BookingController {
     }
 
     @GetMapping
-    public ApiResponse<List<BookingResponse>> getAllBooking(){
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<List<BookingResponse>> getBookings(){
         return ApiResponse.<List<BookingResponse>>builder().message("Tìm Kiếm")
                 .result(bookingService.getAllBookings()).build();
     }

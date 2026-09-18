@@ -41,4 +41,13 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     @Query("SELECT t FROM Ticket t where t.booking.bookingCode = :bookingCode")
     List<Ticket> findByBookingCode(@Param("bookingCode") String bookingCode);
 
+    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.status <> 'CANCELLED' AND t.booking.createdAt >= :startDate AND t.booking.createdAt <= :endDate")
+    Long countNonCancelledTicketsByDateRange(@Param("startDate") java.time.LocalDateTime startDate, 
+                                             @Param("endDate") java.time.LocalDateTime endDate);
+                                             
+    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.status <> 'CANCELLED' AND t.trip.route.id = :routeId")
+    Long countNonCancelledTicketsByRoute(@Param("routeId") Long routeId);
+    
+    @Query("SELECT SUM(t.price) FROM Ticket t WHERE t.status <> 'CANCELLED' AND t.trip.route.id = :routeId")
+    Double sumRevenueByRoute(@Param("routeId") Long routeId);
 }

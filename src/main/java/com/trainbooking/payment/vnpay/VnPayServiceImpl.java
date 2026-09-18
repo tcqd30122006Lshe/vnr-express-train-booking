@@ -14,6 +14,7 @@ import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -119,6 +120,7 @@ public class VnPayServiceImpl implements VnPayService {
     }
 
     @Override
+    @Transactional
     public PaymentResponse processVnPayCallback(Map<String, String> queryParams) {
         String vnp_SecureHash = queryParams.get("vnp_SecureHash");
         // Loại bỏ tham số chữ ký cũ ra khỏi Map để đối soát
@@ -157,6 +159,17 @@ public class VnPayServiceImpl implements VnPayService {
         if ("00".equals(responseCode)) {
             Booking booking = bookingRepository.findByBookingCode(bookingCode)
                     .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+                    
+            // Kiểm tra số tiền thanh toán có khớp không
+            long vnpAmount = Long.parseLong(queryParams.get("vnp_Amount"));
+            long expectedAmount = (long) (booking.getTotalAmount() * 100);
+            if (vnpAmount != expectedAmount) {
+                return PaymentResponse.builder()
+                        .status("FAILED")
+                        .message("Số tiền thanh toán không khớp! Nghi vấn gian lận.")
+                        .build();
+            }
+
             // Đổi trạng thái Booking -> CONFIRMED (Đã thanh toán)
             booking.setStatus("CONFIRMED");
             // Đổi trạng thái tất cả Ticket -> VALID (Có hiệu lực đi tàu!)

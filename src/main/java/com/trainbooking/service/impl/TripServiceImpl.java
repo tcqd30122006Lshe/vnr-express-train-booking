@@ -140,6 +140,7 @@ public class TripServiceImpl implements TripService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<SearchTripResponse> searchTrips(SearchTripRequest request) {
         List<Trip> trips = tripRepository.searchTrips(
                 request.getOriginStationId(),
@@ -163,6 +164,11 @@ public class TripServiceImpl implements TripService {
             }
 
             if (originStop == null || destStop == null) {
+                continue;
+            }
+            
+            // Đảm bảo ga đi phải nằm trước ga đến trên hành trình của chuyến tàu này
+            if (originStop.getOrderIndex() >= destStop.getOrderIndex()) {
                 continue;
             }
 
@@ -208,6 +214,7 @@ public class TripServiceImpl implements TripService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public CarriageSeatMapResponse getCarriageSeatMap(Long id, Long carriageId, Long originStationId, Long destStationId) {
         Trip trip = tripRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.TRIP_NOT_FOUND));
         Carriage carriage = carriageRepository.findById(carriageId).orElseThrow(() -> new AppException(ErrorCode.CARRIAGE_NOT_FOUND));
