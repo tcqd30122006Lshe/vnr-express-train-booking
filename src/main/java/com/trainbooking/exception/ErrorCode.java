@@ -81,6 +81,8 @@ public enum ErrorCode {
     QR_DATA_NOT_FOUND(5000,"Dữ liệu của QrCode không có",HttpStatus.NOT_FOUND),
     INVALID_QR_CODE(5001,"Mã QR không hiệu lực",HttpStatus.BAD_REQUEST),
 
+    // 404 Not Found ErrorCode
+    ENDPOINT_NOT_FOUND(4040, "Đường dẫn không tồn tại trên hệ thống", HttpStatus.NOT_FOUND),
     ;
 
     private final int code;

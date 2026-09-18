@@ -5,9 +5,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(value = NoResourceFoundException.class)
+    ResponseEntity<ApiResponse<?>> handlingNoResourceFoundException(NoResourceFoundException exception) {
+        ApiResponse<?> apiResponse = ApiResponse.builder()
+                .code(ErrorCode.ENDPOINT_NOT_FOUND.getCode())
+                .message("Đường dẫn không tồn tại trên hệ thống: /" + exception.getResourcePath())
+                .build();
+
+        return ResponseEntity.status(ErrorCode.ENDPOINT_NOT_FOUND.getStatusCode()).body(apiResponse);
+    }
 
     @ExceptionHandler(value = Exception.class)
     ResponseEntity<ApiResponse<?>> handlingRuntimeException(Exception exception) {

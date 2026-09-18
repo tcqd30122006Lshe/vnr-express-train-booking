@@ -33,10 +33,10 @@ public class User {
     @Column(name = "email", unique = true)
     String email;
 
-    @Column(name = "phone")
+    @Column(name = "phone", unique = true)
     String phone;
 
-    @Column(name = "id_card")
+    @Column(name = "id_card", unique = true)
     String idCard;
 
     @Column(name = "dob")
@@ -65,4 +65,6 @@ public class User {
         inverseJoinColumns = @JoinColumn(name = "role_name")
     )
     Set<Role> roles;
+
+    
 }

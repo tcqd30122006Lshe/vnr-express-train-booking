@@ -81,11 +81,6 @@
             <version>${org.mapstruct.version}</version>
         </dependency>
 
-        <!-- H2 Database -->
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-        </dependency>
 
         <!-- MySQL Driver -->
         <dependency>
@@ -113,6 +108,13 @@
             <artifactId>javase</artifactId>
             <version>3.5.4</version>
             <scope>compile</scope>
+        </dependency>
+
+        <!-- SpringDoc OpenAPI (Swagger UI) -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.5.0</version>
         </dependency>
     </dependencies>
 

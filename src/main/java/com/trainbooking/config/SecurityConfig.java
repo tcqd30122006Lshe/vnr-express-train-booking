@@ -20,7 +20,7 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     private final String[] PUBLIC_POST_ENDPOINTS={
-            "/h2-console/**",
+            "/error",
             "/api/v1/auth/register",
             "/api/v1/auth/login",
             "/api/v1/auth/introspect",
@@ -32,13 +32,13 @@ public class SecurityConfig {
     };
     private final String[] PUBLIC_GET_POINTS={
             "/",
+            "/error",
             "/index.html",
             "/favicon.ico",
             "/*.css",
             "/*.js",
             "/style.css",
             "/app.js",
-            "/h2-console/**",
             "/static/**",
             "/css/**",
             "/js/**",
@@ -47,7 +47,10 @@ public class SecurityConfig {
             "/api/v1/trips/**",
             "/api/v1/payments/**",
             "/api/v1/tickets/**",
-            "/api/v1/analytics/**"
+            "/api/v1/analytics/**",
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/swagger-ui.html"
     };
     @Autowired
     private CustomJwtDecoder customJwtDecoder;
@@ -57,7 +60,6 @@ public class SecurityConfig {
         httpSecurity.headers(headers -> headers.frameOptions(frame -> frame.disable()));
         httpSecurity.authorizeHttpRequests(request ->request.requestMatchers(HttpMethod.POST,PUBLIC_POST_ENDPOINTS).permitAll()
                 .requestMatchers(HttpMethod.GET,PUBLIC_GET_POINTS).permitAll()
-                .requestMatchers("/h2-console/**").permitAll()
                 .anyRequest().authenticated()
 
         );
