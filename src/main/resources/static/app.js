@@ -35,14 +35,16 @@ document.addEventListener('DOMContentLoaded', () => {
   if (originSelect) {
     originSelect.addEventListener('change', () => {
       const codeTag = document.getElementById('origin-code-tag');
-      if (codeTag) codeTag.innerText = originSelect.value || 'DI';
+      const selectedOption = originSelect.options[originSelect.selectedIndex];
+      if (codeTag) codeTag.innerText = selectedOption && selectedOption.value ? selectedOption.getAttribute('data-code') : 'DI';
     });
   }
 
   if (destSelect) {
     destSelect.addEventListener('change', () => {
       const codeTag = document.getElementById('dest-code-tag');
-      if (codeTag) codeTag.innerText = destSelect.value || 'DEN';
+      const selectedOption = destSelect.options[destSelect.selectedIndex];
+      if (codeTag) codeTag.innerText = selectedOption && selectedOption.value ? selectedOption.getAttribute('data-code') : 'DEN';
     });
   }
 
@@ -476,8 +478,16 @@ function applyRecentSearch(searchStr) {
     const originSelect = document.getElementById('origin-select');
     const destSelect = document.getElementById('dest-select');
     if (originSelect && destSelect) {
-      originSelect.value = parts[0];
-      destSelect.value = parts[1];
+      const setSelectByCode = (select, code) => {
+        for (let i = 0; i < select.options.length; i++) {
+          if (select.options[i].getAttribute('data-code') === code) {
+            select.selectedIndex = i;
+            break;
+          }
+        }
+      };
+      setSelectByCode(originSelect, parts[0]);
+      setSelectByCode(destSelect, parts[1]);
       originSelect.dispatchEvent(new Event('change'));
       destSelect.dispatchEvent(new Event('change'));
     }
@@ -503,7 +513,7 @@ async function loadStations() {
     destSelect.innerHTML = '<option value="">--Chọn Ga Đến--</option>';
 
     stationList.forEach((station) => {
-      const optionHTML = `<option value="${station.code}">${station.name} (${station.province})</option>`;
+      const optionHTML = `<option value="${station.id}" data-code="${station.code}">${station.name} (${station.province})</option>`;
       originSelect.innerHTML += optionHTML;
       destSelect.innerHTML += optionHTML;
     });
@@ -518,8 +528,13 @@ async function loadStations() {
 async function handleSearchTrips(event) {
   event.preventDefault();
 
-  const originCode = document.getElementById('origin-select').value;
-  const destCode = document.getElementById('dest-select').value;
+  const originSelect = document.getElementById('origin-select');
+  const destSelect = document.getElementById('dest-select');
+  const originId = originSelect.value;
+  const destId = destSelect.value;
+  
+  const originCode = originSelect.options[originSelect.selectedIndex]?.getAttribute('data-code');
+  const destCode = destSelect.options[destSelect.selectedIndex]?.getAttribute('data-code');
 
   if (!originCode || !destCode) {
     showToast('Vui lòng chọn đầy đủ Ga đi và Ga đến', 'error');
@@ -535,7 +550,20 @@ async function handleSearchTrips(event) {
   showToast(`🔎 Đang tìm kiếm chuyến tàu từ ${originCode} đến ${destCode}...`, 'info');
 
   try {
-    const response = await fetch(`${API_BASE}/trips`);
+    const searchPayload = {
+      originStationId: Number(originId),
+      destinationStationId: Number(destId),
+      departureDate: document.getElementById('depart-date-select')?.value || new Date().toISOString().split('T')[0]
+    };
+    
+    const response = await fetch(`${API_BASE}/trips/search`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(searchPayload)
+    });
+    
     const data = await response.json();
     currentSearchResults = data.result || [];
 
@@ -1084,8 +1112,8 @@ async function handleCreateBooking(event) {
   const originSelect = document.getElementById('origin-select');
   const destSelect = document.getElementById('dest-select');
 
-  const startId = originSelect && originSelect.selectedIndex > 0 ? originSelect.selectedIndex : 1;
-  const endId = destSelect && destSelect.selectedIndex > 0 ? destSelect.selectedIndex : 5;
+  const startId = originSelect ? originSelect.value : null;
+  const endId = destSelect ? destSelect.value : null;
 
   const bookingData = {
     customerName: name,
