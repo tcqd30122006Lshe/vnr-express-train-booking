@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VNR Express - Cổng Đặt Vé Tàu Hỏa Quốc Gia Việt Nam</title>
+    <!-- Google Font: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- TOAST NOTIFICATION FLOATING CONTAINER -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- SITE HEADER & CENTERED NAVIGATION PILL -->
+    <header class="site-header">
+      <!-- LEFT: LOGO -->
+      <div class="logo-wrapper">
+        <h1 class="site-logo">
+          <a href="#" class="logo-link">
+            <span class="logo-icon">🚆</span>
+            <span class="logo-text">VNR <span class="logo-accent">Express</span></span>
+          </a>
+        </h1>
+        <span class="logo-badge">Chính Thống</span>
+      </div>
+
+      <!-- MIDDLE: CENTERED CAPSULE NAVBAR -->
+      <nav class="site-nav site-nav-centered">
+        <ul class="nav-list nav-list-middle">
+          <li class="nav-item">
+            <a href="#hero-section" class="nav-link active" data-screen="home">
+              <span class="nav-icon">🚆</span> Đặt Vé Tàu
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#pnr-section" class="nav-link" data-screen="pnr">
+              <span class="nav-icon">🔍</span> Tra Cứu Mã Vé
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#timetable-section" class="nav-link" data-screen="timetable">
+              <span class="nav-icon">📅</span> Lịch Trình Tàu
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#my-bookings-section" class="nav-link" data-screen="bookings">
+              <span class="nav-icon">🎟️</span> Vé Của Tôi
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#info-section" class="nav-link" data-screen="info">
+              <span class="nav-icon">ℹ️</span> Quy Định & Hướng Dẫn
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- RIGHT: AUTH BUTTONS & THEME TOGGLE -->
+      <div class="auth-buttons">
+        <button type="button" id="theme-toggle-btn" class="btn-theme-toggle" title="Chuyển Chế Độ Sáng/Tối">
+          🌙
+        </button>
+        <button type="button" id="login-btn" class="btn btn-outline" onclick="openLoginModal()">Đăng Nhập</button>
+        <button type="button" id="register-btn" class="btn btn-primary" onclick="openRegisterModal()">Đăng Ký</button>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="site-main">
+      <!-- HERO & SEARCH SECTION -->
+      <section id="hero-section" class="hero-section view-screen active-screen">
+        <!-- LIVE OFFICIAL TICKER BANNER -->
+        <div class="stats-ticker-bar">
+          <span class="ticker-item">🏛️ Cổng Đặt Vé Tàu Chính Thống Đường Sắt Việt Nam (VNR)</span>
+          <span class="ticker-divider">•</span>
+          <span class="ticker-item">⚡ Xuất Vé Điện Tử QR Code Tức Thì</span>
+          <span class="ticker-divider">•</span>
+          <span class="ticker-item">🛡️ Thanh Toán An Toàn Qua VNPAY / MoMo / VietQR</span>
+        </div>
+
+        <h2 class="hero-title">Đặt Vé Tàu Hỏa <span>Bắc Nam Trực Tuyến</span></h2>
+        <p class="hero-subtitle">Tra cứu hành trình, chọn chỗ ngồi và mua vé điện tử nhanh chóng, an toàn</p>
+
+        <!-- PORTAL MODE TABS -->
+        <div class="search-card-wrapper">
+          <div class="journey-type-selector">
+            <button type="button" class="journey-tab active" id="tab-one-way">
+              <span class="tab-icon">➡️</span> Một Chiều
+            </button>
+            <button type="button" class="journey-tab" id="tab-round-trip">
+              <span class="tab-icon">🔄</span> Khứ Hồi
+            </button>
+            <button type="button" class="journey-tab" id="tab-pnr-mode">
+              <span class="tab-icon">🔍</span> Tra Cứu Mã Vé PNR
+            </button>
+          </div>
+
+          <!-- FORM TÌM VÉ TÀU -->
+          <form id="search-train-form" class="search-card">
+            <!-- WIDGET HEADER / STEPS INDICATOR -->
+            <div class="search-steps-bar">
+              <span class="step-badge active">1. Chọn Chặng</span>
+              <span class="step-arrow">➔</span>
+              <span class="step-badge">2. Chọn Ghế</span>
+              <span class="step-arrow">➔</span>
+              <span class="step-badge">3. Nhận Vé QR</span>
+            </div>
+
+            <!-- GA ĐI & GA ĐẾN -->
+            <div class="form-row-stations">
+              <div class="form-group flex-1">
+                <label for="origin-select" class="form-label">
+                  <span>📍 Ga Khởi Hành</span>
+                  <span class="station-code-preview" id="origin-code-tag">DI</span>
+                </label>
+                <div class="input-icon-wrapper">
+                  <span class="input-prefix-icon">🚉</span>
+                  <select id="origin-select" name="origin" class="form-control" required>
+                    <option value="">--Chọn Ga Khởi Hành--</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- NÚT ĐỔI GA TÀU (SWAP BUTTON) -->
+              <div class="station-swap-wrapper">
+                <button type="button" id="swap-stations-btn" class="btn-swap-station" title="Đổi chiều Ga Đi ➔ Ga Đến">
+                  🔄
+                </button>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="dest-select" class="form-label">
+                  <span>🏁 Ga Điểm Đến</span>
+                  <span class="station-code-preview" id="dest-code-tag">DEN</span>
+                </label>
+                <div class="input-icon-wrapper">
+                  <span class="input-prefix-icon">🏁</span>
+                  <select id="dest-select" name="destination" class="form-control" required>
+                    <option value="">--Chọn Ga Đến--</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- NGÀY ĐI VÀ NGÀY VỀ -->
+            <div class="form-row-dates">
+              <div class="form-group flex-1">
+                <label for="depart-date-select" class="form-label">📅 Ngày Khởi Hành</label>
+                <input type="date" id="depart-date-select" class="form-control" required />
+              </div>
+              <div class="form-group flex-1" id="return-date-group" style="display: none;">
+                <label for="return-date-select" class="form-label">📅 Ngày Trở Về (Khứ Hồi)</label>
+                <input type="date" id="return-date-select" class="form-control" />
+              </div>
+            </div>
+
+            <!-- CHIPS NGÀY KHỞI HÀNH NẠP NHANH -->
+            <div class="date-chips-group">
+              <span class="chips-label">⚡ Chọn nhanh:</span>
+              <button type="button" class="chip-btn active" data-date="today">Hôm nay</button>
+              <button type="button" class="chip-btn" data-date="tomorrow">Ngày mai</button>
+              <button type="button" class="chip-btn" data-date="weekend">Cuối tuần</button>
+            </div>
+
+            <!-- SỐ LƯỢNG HÀNH KHÁCH & HẠNG GHẾ -->
+            <div class="form-row-dates margin-top-14">
+              <div class="form-group flex-1">
+                <label for="passenger-count-select" class="form-label">👥 Số Hành Khách</label>
+                <select id="passenger-count-select" class="form-control">
+                  <option value="1">1 Hành khách (Vé đơn)</option>
+                  <option value="2">2 Hành khách</option>
+                  <option value="3">3 Hành khách</option>
+                  <option value="4">4 Hành khách (Nhóm / Gia đình)</option>
+                </select>
+              </div>
+              <div class="form-group flex-1">
+                <label for="seat-class-filter" class="form-label">💺 Hạng Chỗ Ưu Tiên</label>
+                <select id="seat-class-filter" class="form-control">
+                  <option value="ALL">Tất cả hạng chỗ</option>
+                  <option value="SOFT_SEAT">Ngồi mềm điều hòa</option>
+                  <option value="SLEEPER_4">Giường nằm Khoang 4</option>
+                  <option value="SLEEPER_6">Giường nằm Khoang 6</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- LỊCH SỬ TÌM KIẾM GẦN ĐÂY -->
+            <div id="recent-searches-wrapper" class="recent-searches-wrapper">
+              <!-- JS render history chips -->
+            </div>
+
+            <button type="submit" id="search-submit-btn" class="btn btn-primary btn-block btn-lg">
+              🚀 Tìm Chuyến Tàu Ngay
+            </button>
+          </form>
+
+          <!-- FORM TRA CỨU MÃ VÉ PNR WIDGET -->
+          <div id="pnr-lookup-card" class="search-card display-none">
+            <div class="pnr-header">
+              <h3 class="pnr-title">🔍 Tra Cứu Đơn Vé Điện Tử PNR</h3>
+              <p class="pnr-subtitle">
+                Nhập Mã đơn vé (VD: <code>BK-93FC2027</code>) và Số điện thoại để kiểm tra trạng thái vé điện tử.
+              </p>
+            </div>
+            <div class="form-group">
+              <label for="pnr-input-code" class="form-label">🎟️ Mã Đơn Vé (Booking Code)</label>
+              <input type="text" id="pnr-input-code" class="form-control uppercase-input" placeholder="Nhập BK-XXXXXX..." />
+            </div>
+            <div class="form-group">
+              <label for="pnr-input-phone" class="form-label">📞 Số Điện Thoại Đặt Vé</label>
+              <input type="tel" id="pnr-input-phone" class="form-control" placeholder="Nhập 0987654321..." />
+            </div>
+            <button type="button" id="btn-do-pnr-lookup" class="btn btn-primary btn-block btn-lg">
+              🔎 Kiểm Tra Trạng Thái Vé
+            </button>
+            <div id="pnr-result-output" class="pnr-result-output"></div>
+          </div>
+        </div>
+
+        <!-- KẾT QUẢ TÌM KIẾM -->
+        <div id="search-results-section" class="search-results-section">
+          <div id="filter-pills-wrapper" class="filter-pills-wrapper display-none">
+            <div class="filter-pills-left">
+              <button type="button" class="filter-pill active" data-filter="all">Tất cả chuyến</button>
+              <button type="button" class="filter-pill" data-filter="se">Tàu Tốc Hành SE</button>
+              <button type="button" class="filter-pill" data-filter="morning">Khởi hành Sáng (05:00 - 12:00)</button>
+              <button type="button" class="filter-pill" data-filter="evening">Khởi hành Tối (18:00 - 23:00)</button>
+            </div>
+            <div class="sort-selector-wrapper">
+              <label for="sort-trips-select" class="sort-label">⇅ Sắp xếp:</label>
+              <select id="sort-trips-select" class="sort-select">
+                <option value="PRICE_LOW">Giá rẻ nhất</option>
+                <option value="TIME_EARLIEST">Giờ đi sớm nhất</option>
+                <option value="DURATION_FASTEST">Chạy nhanh nhất</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="search-results-container" class="search-results-container"></div>
+        </div>
+      </section>
+
+      <!-- POPULAR ROUTES SECTION -->
+      <section id="search-section" class="popular-routes-section">
+        <div class="section-header text-center">
+          <span class="section-tag">TUYẾN HOT BẮC NAM</span>
+          <h2 class="section-title">Các Chặng Tàu Được Đặt Nhiều Nhất</h2>
+          <p class="section-subtitle">Phục vụ hàng ngày trên trục đường sắt Bắc Nam với tàu chất lượng cao SE</p>
+        </div>
+        <div class="routes-grid">
+          <article class="route-card">
+            <div class="route-card-badge">Bán Chạy</div>
+            <h3 class="route-title">Hà Nội ➔ Đà Nẵng</h3>
+            <p class="route-train">🚆 Tàu SE1 | Thời gian: ~14 giờ 30 phút</p>
+            <div class="seat-class-tags">
+              <span class="class-tag">Ngồi mềm</span>
+              <span class="class-tag">Nằm K4 VIP</span>
+            </div>
+            <div class="route-footer">
+              <span class="route-price-label">Giá từ:</span>
+              <span class="route-price">750.000 VNĐ</span>
+            </div>
+          </article>
+          <article class="route-card">
+            <div class="route-card-badge gold">Tốc Hành</div>
+            <h3 class="route-title">Hà Nội ➔ Sài Gòn</h3>
+            <p class="route-train">🚆 Tàu SE3 | Thời gian: ~31 giờ 45 phút</p>
+            <div class="seat-class-tags">
+              <span class="class-tag">Ngồi mềm</span>
+              <span class="class-tag">Nằm K4 VIP</span>
+            </div>
+            <div class="route-footer">
+              <span class="route-price-label">Giá từ:</span>
+              <span class="route-price">1.250.000 VNĐ</span>
+            </div>
+          </article>
+          <article class="route-card">
+            <div class="route-card-badge">Phổ Thông</div>
+            <h3 class="route-title">Đà Nẵng ➔ Sài Gòn</h3>
+            <p class="route-train">🚆 Tàu SE7 | Thời gian: ~17 giờ 20 phút</p>
+            <div class="seat-class-tags">
+              <span class="class-tag">Ngồi mềm</span>
+              <span class="class-tag">Nằm K6</span>
+            </div>
+            <div class="route-footer">
+              <span class="route-price-label">Giá từ:</span>
+              <span class="route-price">680.000 VNĐ</span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- BẢNG LỊCH TRÌNH GIỜ TÀU BẮC NAM -->
+      <section id="timetable-section" class="popular-routes-section timetable-section">
+        <div class="section-header text-center">
+          <span class="section-tag">LỊCH CHẠY CHÍNH THỨC</span>
+          <h2 class="section-title">📅 Lịch Trình Giờ Tàu Chạy Bắc Nam</h2>
+          <p class="section-subtitle">Tra cứu chi tiết giờ xuất phát và giờ cập bến dự kiến của các mác tàu</p>
+        </div>
+        <div class="timetable-card">
+          <table class="timetable-table">
+            <thead>
+              <tr>
+                <th>Mác Tàu</th>
+                <th>Ga Đi</th>
+                <th>Giờ Xuất Phát</th>
+                <th>Ga Đến</th>
+                <th>Giờ Đến Dự Kiến</th>
+                <th>Tổng Thời Gian</th>
+                <th>Trạng Thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong class="text-primary font-mono">SE1</strong></td>
+                <td>Hà Nội (HAN)</td>
+                <td><span class="time-pill">22:15</span></td>
+                <td>Đà Nẵng (DNA)</td>
+                <td><span class="time-pill">12:45 (+1)</span></td>
+                <td>14g 30m</td>
+                <td><span class="status-badge success">🟢 Đúng Giờ</span></td>
+              </tr>
+              <tr>
+                <td><strong class="text-primary font-mono">SE3</strong></td>
+                <td>Hà Nội (HAN)</td>
+                <td><span class="time-pill">19:25</span></td>
+                <td>Sài Gòn (SGO)</td>
+                <td><span class="time-pill">03:10 (+2)</span></td>
+                <td>31g 45m</td>
+                <td><span class="status-badge success">🟢 Đúng Giờ</span></td>
+              </tr>
+              <tr>
+                <td><strong class="text-primary font-mono">SE7</strong></td>
+                <td>Đà Nẵng (DNA)</td>
+                <td><span class="time-pill">15:30</span></td>
+                <td>Sài Gòn (SGO)</td>
+                <td><span class="time-pill">08:50 (+1)</span></td>
+                <td>17g 20m</td>
+                <td><span class="status-badge success">🟢 Đúng Giờ</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- KHỐI QUẢN LÝ ĐƠN VÉ CÁ NHÂN -->
+      <section id="my-bookings-section" class="my-bookings-section">
+        <div class="section-header text-center">
+          <span class="section-tag">QUẢN LÝ VÉ CÁ NHÂN</span>
+          <h2 class="section-title">🎟️ Đơn Đặt Vé Của Tôi</h2>
+          <p class="section-subtitle">Tra cứu chi tiết và quản lý thông tin các vé tàu bạn đã mua</p>
+        </div>
+
+        <div id="my-bookings-container" class="my-bookings-container">
+          <div class="empty-state">
+            <span class="empty-icon">🔒</span>
+            <p>Vui lòng <strong>Đăng Nhập</strong> để xem lịch sử vé đã đặt của bạn.</p>
+            <button type="button" class="btn btn-primary margin-top-12" onclick="document.getElementById('login-modal').style.display='flex'">
+              🔑 Đăng Nhập Ngay
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- MÀN HÌNH HƯỚNG DẪN & QUY ĐỊNH VNR EXPRESS -->
+      <section id="info-section" class="popular-routes-section info-section">
+        <div class="section-header text-center">
+          <span class="section-tag">THÔNG TIN CẦN BIẾT</span>
+          <h2 class="section-title">ℹ️ Quy Định & Hướng Dẫn Hành Khách</h2>
+          <p class="section-subtitle">Quy định chính thức từ Tổng Công Ty Đường Sắt Việt Nam (VNR)</p>
+        </div>
+        <div class="routes-grid">
+          <article class="info-card">
+            <div class="info-icon">📜</div>
+            <h3 class="info-title">Quy Định Đổi Trả Vé</h3>
+            <ul class="info-list">
+              <li>• Trả vé trước 24 giờ: Phí đổi trả 10% giá vé.</li>
+              <li>• Trả vé từ 4h - 24h: Phí đổi trả 20% giá vé.</li>
+              <li>• Hoàn tiền tự động về tài khoản ngân hàng trong 3-5 ngày.</li>
+            </ul>
+          </article>
+          <article class="info-card">
+            <div class="info-icon">🧳</div>
+            <h3 class="info-title">Quy Định Hành Lý</h3>
+            <ul class="info-list">
+              <li>• Mỗi hành khách mang tối đa 20kg hành lý xách tay.</li>
+              <li>• Kích thước hành lý tối đa: 0.4m x 0.6m x 0.8m.</li>
+              <li>• Miễn phí gửi xe đạp và đồ dùng cá nhân nhỏ gọn.</li>
+            </ul>
+          </article>
+          <article class="info-card">
+            <div class="info-icon">🎟️</div>
+            <h3 class="info-title">Vé Điện Tử & Check-in</h3>
+            <ul class="info-list">
+              <li>• Không cần in vé giấy, xuất trình Mã QR trên điện thoại.</li>
+              <li>• Mang theo CCCD/Hộ chiếu trùng khớp thông tin đặt vé.</li>
+              <li>• Có mặt tại ga tàu trước giờ khởi hành tối thiểu 30 phút.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="site-footer">
+      <div class="footer-container">
+        <div class="footer-col">
+          <h4 class="footer-brand">🚆 VNR Express</h4>
+          <p class="footer-desc">
+            Cổng thông tin đặt vé tàu trực tuyến chính thức của Đường sắt Việt Nam. Mang lại trải nghiệm đặt vé nhanh chóng, an toàn và hiện đại.
+          </p>
+        </div>
+        <div class="footer-col">
+          <h4>Liên Kết Nhanh</h4>
+          <ul class="footer-menu">
+            <li><a href="#hero-section">Đặt vé tàu</a></li>
+            <li><a href="#timetable-section">Giờ tàu & Lịch trình</a></li>
+            <li><a href="#my-bookings-section">Vé của tôi</a></li>
+            <li><a href="#info-section">Quy định hành khách</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Hỗ Trợ Khách Hàng</h4>
+          <p>📞 Hotline: <strong>1900-1520</strong></p>
+          <p>✉️ Email: <strong>hotro@vnrexpress.vn</strong></p>
+          <p>🌐 Website: <strong>dsvn.vn</strong></p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>Copyright &copy; 2026 Tổng Công Ty Đường Sắt Việt Nam (VNR Express). All Rights Reserved.</p>
+      </div>
+    </footer>
+
+    <!-- LOGIN MODAL POPUP -->
+    <div id="login-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">🔐 Đăng Nhập VNR Express</h3>
+          <button type="button" id="close-modal-btn" class="modal-close-btn">✕</button>
+        </div>
+        <form id="login-form">
+          <div class="form-group">
+            <label for="login-username" class="form-label">Tên Đăng Nhập</label>
+            <input type="text" id="login-username" class="form-control" placeholder="Nhập tên đăng nhập..." required />
+          </div>
+          <div class="form-group">
+            <label for="login-password" class="form-label">Mật Khẩu</label>
+            <input type="password" id="login-password" class="form-control" placeholder="Nhập mật khẩu..." required />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg">⚡ Đăng Nhập Ngay</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- REGISTER MODAL POPUP (ĐĂNG KÝ TÀI KHOẢN KẾT NỐI MYSQL) -->
+    <div id="register-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">📝 Đăng Ký Tài Khoản VNR Express</h3>
+          <button type="button" id="close-register-modal-btn" class="modal-close-btn">✕</button>
+        </div>
+        <form id="register-form">
+          <div class="form-group">
+            <label for="register-username" class="form-label">Tên Đăng Nhập</label>
+            <input type="text" id="register-username" class="form-control" placeholder="Tài khoản (tối thiểu 4 ký tự)..." required minlength="4" />
+          </div>
+          <div class="form-group">
+            <label for="register-fullname" class="form-label">Họ và Tên</label>
+            <input type="text" id="register-fullname" class="form-control" placeholder="Nhập Nguyễn Văn A..." required />
+          </div>
+          <div class="form-group">
+            <label for="register-email" class="form-label">Email</label>
+            <input type="email" id="register-email" class="form-control" placeholder="Nhập email@gmail.com..." required />
+          </div>
+          <div class="form-group">
+            <label for="register-phone" class="form-label">Số Điện Thoại (10 số)</label>
+            <input type="tel" id="register-phone" class="form-control" placeholder="Nhập 0987654321..." pattern="[0-9]{10}" required />
+          </div>
+          <div class="form-group">
+            <label for="register-password" class="form-label">Mật Khẩu</label>
+            <input type="password" id="register-password" class="form-control" placeholder="Tối thiểu 6 ký tự..." required minlength="6" />
+          </div>
+          <div class="form-group">
+            <label for="register-confirm-password" class="form-label">Xác Nhận Mật Khẩu</label>
+            <input type="password" id="register-confirm-password" class="form-control" placeholder="Nhập lại mật khẩu..." required />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg">🎉 Tạo Tài Khoản & Lưu Vào MySQL</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- BOOKING MODAL POPUP VỚI SƠ ĐỒ GHẾ & TÍNH NĂNG NÂNG CAO -->
+    <div id="booking-modal" class="modal-overlay">
+      <div class="modal-card modal-card-large">
+        <div class="modal-header">
+          <h3 class="modal-title">🎟️ Chọn Chỗ & Đặt Vé Tàu</h3>
+          <button type="button" id="close-booking-modal-btn" class="modal-close-btn">✕</button>
+        </div>
+
+        <!-- COUNTDOWN TIMER GIỮ GHẾ -->
+        <div class="hold-timer-bar">
+          <div class="timer-info">
+            <span>⏱️ Thời gian giữ ghế: <strong id="hold-timer-text">09:59</strong></span>
+            <span class="timer-warning">Vui lòng hoàn tất đặt vé trước khi hết giờ</span>
+          </div>
+          <div class="hold-timer-progress"><div id="hold-timer-fill" class="fill"></div></div>
+        </div>
+
+        <form id="booking-form">
+          <input type="hidden" id="booking-trip-id" />
+          <input type="hidden" id="selected-seat-id" />
+
+          <!-- CHỌN TOA TÀU -->
+          <div class="carriage-selector-section">
+            <label class="form-label">🚆 Chọn Toa Tàu:</label>
+            <div class="carriage-buttons">
+              <button type="button" class="btn-carriage active" data-carriage="1">Toa 1 (Ngồi Mềm Điều Hòa)</button>
+              <button type="button" class="btn-carriage" data-carriage="2">Toa 2 (Giường Nằm Khoang 4)</button>
+            </div>
+          </div>
+
+          <!-- PHÍM CHỌN GHẾ NHANH -->
+          <div class="quick-seat-actions">
+            <span class="quick-seat-label">⚡ Chọn nhanh:</span>
+            <button type="button" class="btn-seat-shortcut" id="btn-select-window">🪟 Ghế Cửa Sổ</button>
+            <button type="button" class="btn-seat-shortcut" id="btn-select-aisle">🚶 Ghế Lối Đi</button>
+            <button type="button" class="btn-seat-shortcut" id="btn-select-random">🎯 Chọn Ngẫu Nhiên</button>
+          </div>
+
+          <!-- THANH CHÚ THÍCH GHẾ -->
+          <div class="seat-legend">
+            <div class="legend-item">
+              <span class="legend-box available"></span>
+              <span>Ghế Trống</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-box selected"></span>
+              <span>Đang Chọn</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-box booked"></span>
+              <span>Đã Có Người Đặt</span>
+            </div>
+          </div>
+
+          <!-- SƠ ĐỒ GHẾ TÀU ĐỘNG (4 HÀNG CÓ HÀNH LANG NẰM GIỮA) -->
+          <div id="seat-grid-container" class="seat-grid-container">
+            <!-- JS render seat grid here -->
+          </div>
+
+          <!-- ĐỐI TƯỢNG HÀNH KHÁCH & ƯU ĐÃI GIẢM GIÁ -->
+          <div class="form-group margin-top-16">
+            <label for="passenger-type-select" class="form-label">🎁 Đối Tượng Hành Khách (Ưu Đãi)</label>
+            <select id="passenger-type-select" class="form-control">
+              <option value="1">👨‍💼 Người lớn (100% Giá vé chuẩn)</option>
+              <option value="0.9">🎓 Sinh viên / Học sinh (Giảm 10%)</option>
+              <option value="0.85">👴 Người cao tuổi trên 60t (Giảm 15%)</option>
+              <option value="0.5">👶 Trẻ em 6 - 10 tuổi (Giảm 50%)</option>
+            </select>
+          </div>
+
+          <!-- PHƯƠNG THỨC THANH TOÁN -->
+          <div class="form-group">
+            <label class="form-label">💳 Phương Thức Thanh Toán</label>
+            <div class="payment-methods-grid">
+              <label class="payment-method-card active">
+                <input type="radio" name="paymentMethod" value="VNPAY" checked />
+                <span class="pay-icon">💳</span>
+                <span class="pay-name">VNPAY QR</span>
+              </label>
+              <label class="payment-method-card">
+                <input type="radio" name="paymentMethod" value="MOMO" />
+                <span class="pay-icon">📱</span>
+                <span class="pay-name">Ví MoMo</span>
+              </label>
+              <label class="payment-method-card">
+                <input type="radio" name="paymentMethod" value="VIETQR" />
+                <span class="pay-icon">🏦</span>
+                <span class="pay-name">VietQR Net</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- KHỐI TÍNH TIỀN ĐỘNG CHI TIẾT -->
+          <div class="booking-summary-bar">
+            <div class="summary-details">
+              <p class="summary-line">Ghế đã chọn: <strong id="selected-seat-display" class="highlight-text">Chưa chọn</strong></p>
+              <p id="discount-detail-text" class="discount-detail-text">Áp dụng mức giá chuẩn</p>
+            </div>
+            <div class="summary-price-wrapper">
+              <span class="total-price-label">Tổng thanh toán:</span>
+              <span class="total-price-text" id="total-price-display">0 VNĐ</span>
+            </div>
+          </div>
+
+          <div class="form-row-dates">
+            <div class="form-group flex-1">
+              <label for="customer-name" class="form-label">👤 Họ và Tên Hành Khách</label>
+              <input type="text" id="customer-name" class="form-control" placeholder="Nhập Nguyễn Văn A..." required />
+            </div>
+
+            <div class="form-group flex-1">
+              <label for="customer-phone" class="form-label">📞 Số Điện Thoại (10 số)</label>
+              <input type="tel" id="customer-phone" class="form-control" placeholder="Nhập 0987654321..." pattern="[0-9]{10}" required />
+            </div>
+          </div>
+
+          <div class="form-row-dates">
+            <div class="form-group flex-1">
+              <label for="customer-email" class="form-label">✉️ Email Nhận Vé Điện Tử</label>
+              <input type="email" id="customer-email" class="form-control" placeholder="Nhập email@gmail.com..." required />
+            </div>
+
+            <div class="form-group flex-1">
+              <label for="passenger-idcard" class="form-label">🪪 Số CCCD / Passport</label>
+              <input type="text" id="passenger-idcard" class="form-control" placeholder="Nhập 012345678901..." required />
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block btn-lg margin-top-12">
+            🎟️ Xác Nhận & Thanh Toán Đặt Vé
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- CUSTOM CONFIRM CANCEL TICKET MODAL -->
+    <div id="cancel-confirm-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">⚠️ Xác Nhận Hủy Vé Tàu</h3>
+          <button type="button" id="close-cancel-modal-btn" class="modal-close-btn">✕</button>
+        </div>
+        <div class="modal-body text-center">
+          <p class="cancel-modal-text">
+            Bạn có chắc chắn muốn hủy đơn vé mã <strong id="cancel-booking-code-text" class="cancel-code-highlight">BK-XXXXXX</strong> không?
+          </p>
+          <p class="cancel-modal-subtext">Sau khi xác nhận, vị trí ghế sẽ bị giải phóng và không thể khôi phục.</p>
+        </div>
+        <div class="modal-actions-row">
+          <button type="button" id="cancel-modal-close-action" class="btn btn-outline flex-1">Bỏ qua</button>
+          <button type="button" id="confirm-cancel-booking-btn" class="btn btn-danger flex-1">🗑️ Xác Nhận Hủy Vé</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRINT / PREVIEW REALISTIC QR E-TICKET MODAL -->
+    <div id="print-ticket-modal" class="modal-overlay">
+      <div class="modal-card modal-card-large">
+        <div class="modal-header">
+          <h3 class="modal-title">🎟️ Vé Tàu Điện Tử VNR Express</h3>
+          <button type="button" id="close-print-modal-btn" class="modal-close-btn">✕</button>
+        </div>
+        <div class="e-ticket-card" id="e-ticket-content">
+          <div class="e-ticket-header">
+            <div class="e-ticket-brand">
+              <h4>🚆 TỔNG CÔNG TY ĐƯỜNG SẮT VIỆT NAM</h4>
+              <span class="e-ticket-sub">VNR EXPRESS OFFICIAL E-TICKET</span>
+            </div>
+            <span class="e-ticket-code" id="print-ticket-code">BK-TEST001</span>
+          </div>
+          <div class="e-ticket-body">
+            <div class="e-ticket-col">
+              <p class="ticket-row"><span class="label">Hành khách:</span> <strong id="print-customer-name">Hành khách VNR</strong></p>
+              <p class="ticket-row"><span class="label">Số điện thoại:</span> <strong id="print-customer-phone">0912345678</strong></p>
+              <p class="ticket-row"><span class="label">Mác tàu:</span> <strong id="print-train-code">SE1 Tốc Hành</strong></p>
+            </div>
+            <div class="e-ticket-col">
+              <p class="ticket-row"><span class="label">Lịch trình:</span> <strong>Ga Hà Nội ➔ Ga Đà Nẵng</strong></p>
+              <p class="ticket-row"><span class="label">Vị trí ghế:</span> <strong id="print-seat-number">Ghế số 12 (Toa 1)</strong></p>
+              <p class="ticket-row"><span class="label">Tổng tiền:</span> <strong id="print-total-price" class="text-primary font-bold">750.000 VNĐ</strong></p>
+            </div>
+          </div>
+
+          <!-- DYNAMIC QR CODE & BARCODE BOARDING PASS SECTION -->
+          <div class="e-ticket-qr-section">
+            <div class="qr-code-frame">
+              <img id="print-qr-image" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=VNR_TICKET_BK-TEST001" alt="Mã QR Check-in" class="qr-img" />
+            </div>
+            <p class="qr-caption">📱 Quét mã QR tại Cửa Soát Vé Tự Động để vào ga</p>
+            <div class="barcode-graphic">║▌║█║▌│║▌║▌█║ 8935000998877</div>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-block btn-lg margin-top-16" onclick="window.print()">
+          🖨️ In Vé Điện Tử / Tải Mã QR
+        </button>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
