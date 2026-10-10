@@ -854,7 +854,8 @@ async function handleLogin(e) {
       document.getElementById('login-modal').style.display = 'none';
       checkLoginState();
     } else {
-      showToast('❌ Đăng nhập thất bại: Tài khoản hoặc mật khẩu không chính xác!', 'error');
+      const errorMsg = data.message || 'Tài khoản hoặc mật khẩu không chính xác!';
+      showToast(`❌ ${errorMsg}`, 'error');
     }
   } catch (error) {
     console.error('❌ Lỗi khi đăng nhập:', error);

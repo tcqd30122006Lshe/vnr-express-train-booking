@@ -66,33 +66,55 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private static final java.util.Map<String, Integer> failedAttemptsCache = new java.util.concurrent.ConcurrentHashMap<>();
     private static final java.util.Map<String, Instant> lockoutCache = new java.util.concurrent.ConcurrentHashMap<>();
 
+    private String normalizeUsername(String username) {
+        return username != null ? username.trim().toLowerCase() : "";
+    }
+
     private boolean isLockedOut(String username) {
-        Instant lockExpiry = lockoutCache.get(username);
+        String key = normalizeUsername(username);
+        Instant lockExpiry = lockoutCache.get(key);
         if (lockExpiry != null) {
             if (Instant.now().isBefore(lockExpiry)) {
                 return true;
             } else {
-                lockoutCache.remove(username);
-                failedAttemptsCache.remove(username);
+                lockoutCache.remove(key);
+                failedAttemptsCache.remove(key);
             }
         }
         return false;
     }
 
+    private long getRemainingLockoutMinutes(String username) {
+        String key = normalizeUsername(username);
+        Instant lockExpiry = lockoutCache.get(key);
+        if (lockExpiry != null && Instant.now().isBefore(lockExpiry)) {
+            long remainingSeconds = ChronoUnit.SECONDS.between(Instant.now(), lockExpiry);
+            return Math.max(1, (remainingSeconds + 59) / 60);
+        }
+        return 0;
+    }
+
     private void recordFailedAttempt(String username) {
-        int attempts = failedAttemptsCache.getOrDefault(username, 0) + 1;
+        String key = normalizeUsername(username);
+        int attempts = failedAttemptsCache.getOrDefault(key, 0) + 1;
         if (attempts >= MAX_FAILED_ATTEMPTS) {
-            lockoutCache.put(username, Instant.now().plusSeconds(LOCKOUT_DURATION_SECONDS));
-            failedAttemptsCache.remove(username);
+            lockoutCache.put(key, Instant.now().plusSeconds(LOCKOUT_DURATION_SECONDS));
+            failedAttemptsCache.remove(key);
             log.warn("Tài khoản '{}' bị tạm khóa 5 phút do đăng nhập sai {} lần liên tiếp", username, attempts);
+            throw new AppException(ErrorCode.ACCOUNT_LOCKED,
+                    "Bạn đã đăng nhập sai quá 5 lần liên tiếp. Tài khoản tạm thời bị khóa trong 5 phút!");
         } else {
-            failedAttemptsCache.put(username, attempts);
+            failedAttemptsCache.put(key, attempts);
+            int remaining = MAX_FAILED_ATTEMPTS - attempts;
+            throw new AppException(ErrorCode.UNAUTHENTICATED,
+                    "Tài khoản hoặc mật khẩu không chính xác. Bạn còn " + remaining + " lần thử trước khi bị khóa tạm thời.");
         }
     }
 
     private void resetFailedAttempts(String username) {
-        failedAttemptsCache.remove(username);
-        lockoutCache.remove(username);
+        String key = normalizeUsername(username);
+        failedAttemptsCache.remove(key);
+        lockoutCache.remove(key);
     }
 
     @Override
@@ -124,14 +146,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         // 1. Kiểm tra tài khoản có đang bị tạm khóa do nhập sai quá nhiều không (Anti Brute-force)
         if (isLockedOut(username)) {
-            throw new AppException(ErrorCode.ACCOUNT_LOCKED);
+            long remainingMinutes = getRemainingLockoutMinutes(username);
+            throw new AppException(ErrorCode.ACCOUNT_LOCKED,
+                    "Tài khoản đang bị tạm khóa do nhập sai quá 5 lần. Vui lòng thử lại sau khoảng " + remainingMinutes + " phút.");
         }
 
-        // 2. Chống User Enumeration: Trả về cùng lỗi UNAUTHENTICATED cho cả 2 trường hợp (không tìm thấy user hoặc sai mật khẩu)
+        // 2. Chống User Enumeration: Trả về lỗi thống nhất cho cả 2 trường hợp (không tìm thấy user hoặc sai mật khẩu)
         var optionalUser = userRepository.findByUsername(username);
         if (optionalUser.isEmpty() || !passwordEncoder.matches(request.getPassword(), optionalUser.get().getPassword())) {
             recordFailedAttempt(username);
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
         // 3. Đăng nhập thành công -> Reset số lần vi phạm
