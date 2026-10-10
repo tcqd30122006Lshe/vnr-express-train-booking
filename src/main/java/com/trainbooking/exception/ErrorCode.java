@@ -26,13 +26,14 @@ public enum ErrorCode {
     EMAIL_EXISTED(5005, "Email đã được sử dụng", HttpStatus.BAD_REQUEST),
     PHONE_EXISTED(5006, "Số điện thoại đã được sử dụng", HttpStatus.BAD_REQUEST),
     IDCARD_EXISTED(5007, "Căn cước công dân đã được sử dụng", HttpStatus.BAD_REQUEST),
-    UNAUTHENTICATED(1006, "Chưa xác thực hoặc Token không hợp lệ", HttpStatus.UNAUTHORIZED),
+    UNAUTHENTICATED(1006, "Tài khoản hoặc mật khẩu không chính xác", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(1007, "Bạn không có quyền truy cập chức năng này", HttpStatus.FORBIDDEN),
+    ACCOUNT_LOCKED(5010, "Bạn đã đăng nhập sai quá 5 lần liên tiếp. Vui lòng thử lại sau 5 phút.", HttpStatus.TOO_MANY_REQUESTS),
 
-    // Route ErrorCodes (1005 - 1013)
+    // Route ErrorCodes (1005, 1026 - 1027, 1008 - 1013)
     ROUTE_CODE_BLANK(1005, "Mã tuyến không được để trống", HttpStatus.BAD_REQUEST),
-    ROUTE_NAME_BLANK(1006, "Tên tuyến không được để trống", HttpStatus.BAD_REQUEST),
-    ROUTE_STATIONS_EMPTY(1007, "Tuyến đường phải có ít nhất 1 ga dừng", HttpStatus.BAD_REQUEST),
+    ROUTE_NAME_BLANK(1026, "Tên tuyến không được để trống", HttpStatus.BAD_REQUEST),
+    ROUTE_STATIONS_EMPTY(1027, "Tuyến đường phải có ít nhất 1 ga dừng", HttpStatus.BAD_REQUEST),
     STATION_ID_NULL(1008, "ID ga tàu không được để trống", HttpStatus.BAD_REQUEST),
     ORDER_INDEX_NULL(1009, "Thứ tự dừng không được để trống", HttpStatus.BAD_REQUEST),
     DISTANCE_INVALID(1010, "Khoảng cách phải lớn hơn hoặc bằng 0", HttpStatus.BAD_REQUEST),
@@ -83,7 +84,7 @@ public enum ErrorCode {
 
     // QR ErrorCodes ( 5000- )
     QR_DATA_NOT_FOUND(5000,"Dữ liệu của QrCode không có",HttpStatus.NOT_FOUND),
-    INVALID_QR_CODE(5001,"Mã QR không hiệu lực",HttpStatus.BAD_REQUEST),
+    INVALID_QR_CODE(5011,"Mã QR không hiệu lực",HttpStatus.BAD_REQUEST),
 
     // 404 Not Found ErrorCode
     ENDPOINT_NOT_FOUND(4040, "Đường dẫn không tồn tại trên hệ thống", HttpStatus.NOT_FOUND),

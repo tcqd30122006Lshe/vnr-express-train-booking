@@ -107,11 +107,18 @@ public class BookingServiceImpl implements com.trainbooking.service.BookingServi
         }
 
         Double totalAmount = tickets.size() * ticketPrice;
+
+        org.springframework.security.core.Authentication authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName()))
+                ? authentication.getName()
+                : null;
+
         Booking booking = Booking.builder()
                 .bookingCode(bookingCode)
                 .customerName(request.getCustomerName())
                 .customerPhone(request.getCustomerPhone())
                 .customerEmail(request.getCustomerEmail())
+                .userUsername(currentUsername)
                 .totalAmount(totalAmount)
                 .status("PENDING")
                 .createdAt(LocalDateTime.now())
@@ -132,11 +139,17 @@ public class BookingServiceImpl implements com.trainbooking.service.BookingServi
 
         return response;
     }
+
     @Override
     @Transactional(readOnly = true)
     public BookingResponse getBookingByCode(String bookingCode){
-        Booking booking= bookingRepository.findByBookingCode(bookingCode).orElseThrow(()->new AppException(ErrorCode.BOOKING_NOT_FOUND));
-        BookingResponse response=bookingMapper.toBookingResponse(booking);
+        Booking booking = bookingRepository.findByBookingCode(bookingCode)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+
+        // Chống lỗ hổng IDOR: Chỉ chủ sở hữu đơn vé hoặc ADMIN mới được xem
+        checkBookingOwnership(booking);
+
+        BookingResponse response = bookingMapper.toBookingResponse(booking);
         if(booking.getTickets()!=null&& !booking.getTickets().isEmpty()){
             Ticket firstTicket=booking.getTickets().get(0);
             response.setTripId(firstTicket.getTrip().getId());
@@ -151,8 +164,19 @@ public class BookingServiceImpl implements com.trainbooking.service.BookingServi
     @Override
     @Transactional(readOnly = true)
     public List<BookingResponse> getAllBookings() {
-        return bookingRepository.findAll()
-                .stream()
+        org.springframework.security.core.Authentication authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        String currentUsername = (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName()))
+                ? authentication.getName()
+                : null;
+
+        // Nếu là ADMIN -> xem tất cả; Nếu là USER -> chỉ xem danh sách vé do chính mình đặt
+        List<Booking> bookings = isAdmin
+                ? bookingRepository.findAll()
+                : (currentUsername != null ? bookingRepository.findByUserUsername(currentUsername) : List.of());
+
+        return bookings.stream()
                 .map(booking -> {
                     BookingResponse response=bookingMapper.toBookingResponse(booking);
                     if(booking.getTickets()!=null&& !booking.getTickets().isEmpty()){
@@ -170,8 +194,12 @@ public class BookingServiceImpl implements com.trainbooking.service.BookingServi
 
     @Override
     public void cancelBooking(String bookingCode) {
-        Booking booking=bookingRepository.findByBookingCode(bookingCode)
-                .orElseThrow(()->new AppException(ErrorCode.BOOKING_NOT_FOUND));
+        Booking booking = bookingRepository.findByBookingCode(bookingCode)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+
+        // Chống lỗ hổng IDOR: Chỉ chủ sở hữu đơn vé hoặc ADMIN mới được hủy vé
+        checkBookingOwnership(booking);
+
         booking.setStatus("CANCELLED");
         if(booking.getTickets()!=null){
             for(Ticket ticket: booking.getTickets()){
@@ -179,5 +207,16 @@ public class BookingServiceImpl implements com.trainbooking.service.BookingServi
             }
         }
         bookingRepository.save(booking);
+    }
+
+    private void checkBookingOwnership(Booking booking) {
+        org.springframework.security.core.Authentication authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName())) {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+            if (!isAdmin && booking.getUserUsername() != null && !booking.getUserUsername().equals(authentication.getName())) {
+                throw new AppException(ErrorCode.UNAUTHORIZED);
+            }
+        }
     }
 }

@@ -30,18 +30,19 @@ public class TicketServiceImpl implements TicketService {
     @Transactional(readOnly = true)
     public TicketResponse getTicketById(Long ticketId) {
         Ticket ticket=ticketRepository.findById(ticketId).orElseThrow(()-> new AppException(ErrorCode.TICKET_NOT_FOUND));
-
+        checkTicketOwnership(ticket);
         return mapToTicketResponse(ticket);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<TicketResponse> getTicketsByBookingCode(String bookingCode) {
-        if (!ticketRepository.findByBookingCode(bookingCode).isEmpty()) {
-            return ticketRepository.findByBookingCode(bookingCode).stream().map(ticket -> mapToTicketResponse(ticket)).toList();
-        }else{
+        List<Ticket> tickets = ticketRepository.findByBookingCode(bookingCode);
+        if (tickets.isEmpty()) {
             throw new AppException(ErrorCode.TICKET_NOT_FOUND);
         }
+        checkTicketOwnership(tickets.get(0));
+        return tickets.stream().map(this::mapToTicketResponse).toList();
     }
 
     @Override
@@ -70,6 +71,7 @@ public class TicketServiceImpl implements TicketService {
     @Transactional
     public TicketCancellationResponse cancelTicket(Long ticketId) {
         Ticket ticket= ticketRepository.findById(ticketId).orElseThrow(()-> new AppException(ErrorCode.TICKET_NOT_FOUND));
+        checkTicketOwnership(ticket);
 
         if(!"VALID".equalsIgnoreCase(ticket.getStatus())){
             throw new AppException(ErrorCode.INVALID_KEY);
@@ -133,4 +135,14 @@ public class TicketServiceImpl implements TicketService {
                 .build();
     }
 
+    private void checkTicketOwnership(Ticket ticket) {
+        org.springframework.security.core.Authentication authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName())) {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+            if (!isAdmin && ticket.getBooking() != null && ticket.getBooking().getUserUsername() != null && !ticket.getBooking().getUserUsername().equals(authentication.getName())) {
+                throw new AppException(ErrorCode.UNAUTHORIZED);
+            }
+        }
+    }
 }

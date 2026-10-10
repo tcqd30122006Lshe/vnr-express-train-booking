@@ -20,6 +20,25 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ErrorCode.ENDPOINT_NOT_FOUND.getStatusCode()).body(apiResponse);
     }
 
+    @ExceptionHandler(value = org.springframework.security.oauth2.jwt.JwtException.class)
+    ResponseEntity<ApiResponse<?>> handlingJwtException(org.springframework.security.oauth2.jwt.JwtException exception) {
+        ApiResponse<?> apiResponse = ApiResponse.builder()
+                .code(ErrorCode.UNAUTHENTICATED.getCode())
+                .message(ErrorCode.UNAUTHENTICATED.getMessage())
+                .build();
+        return ResponseEntity.status(ErrorCode.UNAUTHENTICATED.getStatusCode()).body(apiResponse);
+    }
+
+    @ExceptionHandler(value = org.springframework.security.access.AccessDeniedException.class)
+    ResponseEntity<ApiResponse<?>> handlingAccessDeniedException(org.springframework.security.access.AccessDeniedException exception) {
+        ErrorCode errorCode = ErrorCode.UNAUTHORIZED;
+        return ResponseEntity.status(errorCode.getStatusCode())
+                .body(ApiResponse.builder()
+                        .code(errorCode.getCode())
+                        .message(errorCode.getMessage())
+                        .build());
+    }
+
     @ExceptionHandler(value = Exception.class)
     ResponseEntity<ApiResponse<?>> handlingRuntimeException(Exception exception) {
         ApiResponse<?> apiResponse = ApiResponse.builder()

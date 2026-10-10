@@ -4,6 +4,19 @@
 
 const API_BASE = '/api/v1';
 
+// ==========================================
+// XSS DEFENSE HELPER: ESCAPE HTML SPECIAL CHARACTERS
+// ==========================================
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 let pendingBookingCodeToCancel = null;
 let currentBaseSeatPrice = 750000;
 let holdTimerInterval = null;
@@ -363,18 +376,20 @@ function handleDoPnrLookup() {
   outputElem.innerHTML = '<p style="color: var(--primary); font-size: 14px; font-weight: 600;">⏳ Đang kết nối tra cứu vé trên hệ thống VNR Express...</p>';
 
   setTimeout(() => {
+    const safeCode = escapeHtml(codeInput.toUpperCase());
+    const safePhone = escapeHtml(phoneInput || '0987654321');
     outputElem.innerHTML = `
       <div style="background: var(--surface-dark); padding: 20px; border-radius: var(--radius-md); border-left: 5px solid var(--success-green); text-align: left;">
         <h4 style="color: var(--success-green); font-size: 17px; margin-bottom: 6px;">🎟️ Đơn Vé Điện Tử HỢP LỆ</h4>
-        <p style="font-size: 14px; color: var(--white); margin-top: 4px;">Mã Đơn Vé: <strong class="font-mono" style="color: var(--primary);">${codeInput.toUpperCase()}</strong></p>
+        <p style="font-size: 14px; color: var(--white); margin-top: 4px;">Mã Đơn Vé: <strong class="font-mono" style="color: var(--primary);">${safeCode}</strong></p>
         <p style="font-size: 13px; color: var(--gray-text); margin-top: 4px;">Trạng thái: <span class="booking-status-badge">ĐÃ XÁC NHẬN (THÀNH CÔNG)</span></p>
         <p style="font-size: 14px; color: var(--white-muted); margin-top: 6px;">Hành trình: <strong>Ga Hà Nội ➔ Ga Đà Nẵng</strong> (Tàu SE1 - Ghế 12)</p>
-        <button type="button" class="btn btn-outline" style="margin-top: 14px; font-size: 13px;" onclick="openPrintModal('${codeInput.toUpperCase()}', 'Hành khách VNR', '${phoneInput || '0987654321'}', '750.000')">
+        <button type="button" class="btn btn-outline" style="margin-top: 14px; font-size: 13px;" onclick="openPrintModal('${safeCode}', 'Hành khách VNR', '${safePhone}', '750.000')">
           🖨️ In Vé Điện Tử & Xem Mã QR
         </button>
       </div>
     `;
-    showToast(`✅ Tìm thấy dữ liệu vé mã ${codeInput.toUpperCase()}!`, 'success');
+    showToast(`✅ Tìm thấy dữ liệu vé mã ${safeCode}!`, 'success');
   }, 600);
 }
 
@@ -412,7 +427,7 @@ function showToast(message, type = 'info') {
   toast.className = `toast ${type}`;
 
   const icon = type === 'success' ? '🎉' : type === 'error' ? '❌' : 'ℹ️';
-  toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+  toast.innerHTML = `<span>${icon}</span> <span>${escapeHtml(message)}</span>`;
 
   container.appendChild(toast);
 
@@ -467,7 +482,8 @@ function loadRecentSearches() {
 
   let html = '<span style="color: var(--gray-text); font-weight: 600;">🕒 Gần đây:</span> ';
   searches.forEach((s) => {
-    html += `<span class="recent-chip" onclick="applyRecentSearch('${s}')">${s}</span>`;
+    const safeS = escapeHtml(s);
+    html += `<span class="recent-chip" onclick="applyRecentSearch('${safeS}')">${safeS}</span>`;
   });
   container.innerHTML = html;
 }
@@ -878,7 +894,7 @@ function checkLoginState() {
   if (token) {
     authButtonContainer.innerHTML = `
       ${themeBtnHTML}
-      <span class="user-badge">👤 ${username}</span>
+      <span class="user-badge">👤 ${escapeHtml(username)}</span>
       <button type="button" class="btn btn-outline" onclick="handleLogout()">Đăng Xuất</button>
     `;
     initThemeToggle();
@@ -1203,6 +1219,11 @@ async function loadMyBookings() {
         ? Number(item.totalAmount).toLocaleString('vi-VN')
         : '750.000';
 
+      const safeBookingCode = escapeHtml(item.bookingCode);
+      const safeCustomerName = escapeHtml(item.customerName);
+      const safeCustomerPhone = escapeHtml(item.customerPhone);
+      const safeCustomerEmail = escapeHtml(item.customerEmail);
+
       const isCancelled = item.status === 'CANCELLED';
       const statusClass = isCancelled ? 'booking-card cancelled' : 'booking-card';
       const badgeClass = isCancelled ? 'booking-status-badge cancelled' : 'booking-status-badge';
@@ -1210,13 +1231,13 @@ async function loadMyBookings() {
 
       const cancelBtnHTML = isCancelled
         ? ''
-        : `<button type="button" class="btn btn-outline btn-danger" onclick="openCancelModal('${item.bookingCode}')">
+        : `<button type="button" class="btn btn-outline btn-danger" onclick="openCancelModal('${safeBookingCode}')">
             🗑️ Hủy Vé
           </button>`;
 
       const printBtnHTML = isCancelled
         ? ''
-        : `<button type="button" class="btn btn-outline" onclick="openPrintModal('${item.bookingCode}', '${item.customerName}', '${item.customerPhone}', '${formattedTotal}')">
+        : `<button type="button" class="btn btn-outline" onclick="openPrintModal('${safeBookingCode}', '${safeCustomerName}', '${safeCustomerPhone}', '${formattedTotal}')">
             🖨️ In Vé QR
           </button>`;
 
@@ -1224,11 +1245,11 @@ async function loadMyBookings() {
         <article class="${statusClass}">
           <div>
             <div class="booking-header-info">
-              <span class="booking-code-badge">Mã vé: ${item.bookingCode}</span>
+              <span class="booking-code-badge">Mã vé: ${safeBookingCode}</span>
               <span class="${badgeClass}">${statusText}</span>
             </div>
-            <p class="passenger-info">Hành khách: <strong>${item.customerName}</strong> (${item.customerPhone})</p>
-            <p class="passenger-email">Email: ${item.customerEmail}</p>
+            <p class="passenger-info">Hành khách: <strong>${safeCustomerName}</strong> (${safeCustomerPhone})</p>
+            <p class="passenger-email">Email: ${safeCustomerEmail}</p>
           </div>
           <div class="booking-action-wrapper">
             <p class="booking-price">${formattedTotal} VNĐ</p>

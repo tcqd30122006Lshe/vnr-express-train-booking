@@ -60,6 +60,41 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     PasswordEncoder passwordEncoder;
     UserMapper userMapper;
 
+    // Cơ chế chống Brute-force & DoS: Tạm khóa sau 5 lần nhập sai liên tiếp
+    private static final int MAX_FAILED_ATTEMPTS = 5;
+    private static final long LOCKOUT_DURATION_SECONDS = 300; // 5 phút
+    private static final java.util.Map<String, Integer> failedAttemptsCache = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.Map<String, Instant> lockoutCache = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private boolean isLockedOut(String username) {
+        Instant lockExpiry = lockoutCache.get(username);
+        if (lockExpiry != null) {
+            if (Instant.now().isBefore(lockExpiry)) {
+                return true;
+            } else {
+                lockoutCache.remove(username);
+                failedAttemptsCache.remove(username);
+            }
+        }
+        return false;
+    }
+
+    private void recordFailedAttempt(String username) {
+        int attempts = failedAttemptsCache.getOrDefault(username, 0) + 1;
+        if (attempts >= MAX_FAILED_ATTEMPTS) {
+            lockoutCache.put(username, Instant.now().plusSeconds(LOCKOUT_DURATION_SECONDS));
+            failedAttemptsCache.remove(username);
+            log.warn("Tài khoản '{}' bị tạm khóa 5 phút do đăng nhập sai {} lần liên tiếp", username, attempts);
+        } else {
+            failedAttemptsCache.put(username, attempts);
+        }
+    }
+
+    private void resetFailedAttempts(String username) {
+        failedAttemptsCache.remove(username);
+        lockoutCache.remove(username);
+    }
+
     @Override
     public UserResponse register(UserCreationRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
@@ -85,14 +120,24 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        String username = request.getUsername();
 
-        boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPassword());
-        if (!authenticated) {
+        // 1. Kiểm tra tài khoản có đang bị tạm khóa do nhập sai quá nhiều không (Anti Brute-force)
+        if (isLockedOut(username)) {
+            throw new AppException(ErrorCode.ACCOUNT_LOCKED);
+        }
+
+        // 2. Chống User Enumeration: Trả về cùng lỗi UNAUTHENTICATED cho cả 2 trường hợp (không tìm thấy user hoặc sai mật khẩu)
+        var optionalUser = userRepository.findByUsername(username);
+        if (optionalUser.isEmpty() || !passwordEncoder.matches(request.getPassword(), optionalUser.get().getPassword())) {
+            recordFailedAttempt(username);
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
-        String jwtToken = generateToken(user);
+
+        // 3. Đăng nhập thành công -> Reset số lần vi phạm
+        resetFailedAttempts(username);
+
+        String jwtToken = generateToken(optionalUser.get());
         return AuthenticationResponse.builder().token(jwtToken).authenticated(true).build();
     }
 

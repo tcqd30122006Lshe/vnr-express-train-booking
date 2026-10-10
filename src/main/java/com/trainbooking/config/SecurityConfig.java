@@ -53,9 +53,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         // Cấu hình ép buộc HTTPS (nếu chạy local dev thì comment dòng requireChannel này lại)
-        httpSecurity.requiresChannel(channel -> channel.anyRequest().requiresSecure());
+//        httpSecurity.requiresChannel(channel -> channel.anyRequest().requiresSecure());
         
-        // Cấu hình HSTS Header
+         //Cấu hình HSTS Header
         httpSecurity.headers(headers -> headers
                 .frameOptions(frame -> frame.disable())
                 .httpStrictTransportSecurity(hsts -> hsts
@@ -63,7 +63,8 @@ public class SecurityConfig {
                         .maxAgeInSeconds(31536000)
                 )
         );
-        
+//        httpSecurity.headers(headers -> headers.frameOptions(frame -> frame.disable()));
+//
         httpSecurity.authorizeHttpRequests(request ->request.requestMatchers(HttpMethod.POST,PUBLIC_POST_ENDPOINTS).permitAll()
                 .requestMatchers(HttpMethod.GET,PUBLIC_GET_POINTS).permitAll()
                 .anyRequest().authenticated()

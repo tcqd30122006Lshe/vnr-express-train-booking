@@ -12,6 +12,7 @@ import java.util.Optional;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     Optional<Booking> findByBookingCode(String bookingCode);
+    List<Booking> findByUserUsername(String userUsername);
     List<Booking> findByStatusAndCreatedAtBefore(String status, LocalDateTime threshold);
 
     @org.springframework.data.jpa.repository.Query("SELECT SUM(b.totalAmount) FROM Booking b WHERE b.status = :status AND b.createdAt >= :startDate AND b.createdAt <= :endDate")

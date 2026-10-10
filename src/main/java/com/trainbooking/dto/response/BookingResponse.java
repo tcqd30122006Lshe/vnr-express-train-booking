@@ -22,6 +22,7 @@ public class BookingResponse {
     String customerName;
     String customerPhone;
     String customerEmail;
+    String userUsername;
 
     // Thông tin chuyến tàu & chặng đi
     Long tripId;

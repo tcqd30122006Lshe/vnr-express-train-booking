@@ -34,6 +34,9 @@ public class Booking {
     @Column(name = "customer_email")
     String customerEmail;
 
+    @Column(name = "user_username")
+    String userUsername;
+
     @Column(name = "total_amount", nullable = false)
     Double totalAmount;
 
