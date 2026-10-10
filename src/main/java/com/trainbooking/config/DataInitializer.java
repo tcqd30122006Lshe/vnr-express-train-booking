@@ -198,6 +198,65 @@ public class DataInitializer {
                 log.info(">>> Generated TripStops for existing Trip: {}", trip.getTripCode());
             }
         }
+
+        // 7. Ensure Daily Trips for Today and next 14 days
+        if (!allRoutes.isEmpty() && !allTrains.isEmpty()) {
+            Route mainRoute = allRoutes.get(0);
+            Train t1 = allTrains.get(0);
+            Train t2 = allTrains.size() > 1 ? allTrains.get(1) : t1;
+
+            java.time.LocalDate today = java.time.LocalDate.now();
+            for (int i = 0; i <= 14; i++) {
+                java.time.LocalDate targetDate = today.plusDays(i);
+                String dateSuffix = targetDate.toString().replace("-", "");
+
+                // Chuyến sáng: 08:00
+                String code1 = "SE1-" + dateSuffix;
+                if (!tripRepository.existsByTripCode(code1)) {
+                    Trip tripMorning = Trip.builder()
+                            .tripCode(code1)
+                            .train(t1)
+                            .route(mainRoute)
+                            .departureTime(targetDate.atTime(8, 0))
+                            .arrivalTime(targetDate.atTime(20, 30))
+                            .status("SCHEDULED")
+                            .build();
+                    generateTripStops(tripMorning);
+                    tripRepository.save(tripMorning);
+                }
+
+                // Chuyến trưa: 11:30
+                String code2 = "SE3-" + dateSuffix;
+                if (!tripRepository.existsByTripCode(code2)) {
+                    Trip tripNoon = Trip.builder()
+                            .tripCode(code2)
+                            .train(t2)
+                            .route(mainRoute)
+                            .departureTime(targetDate.atTime(11, 30))
+                            .arrivalTime(targetDate.atTime(23, 30))
+                            .status("SCHEDULED")
+                            .build();
+                    generateTripStops(tripNoon);
+                    tripRepository.save(tripNoon);
+                }
+
+                // Chuyến tối: 19:00
+                String code3 = "SE7-" + dateSuffix;
+                if (!tripRepository.existsByTripCode(code3)) {
+                    Trip tripEvening = Trip.builder()
+                            .tripCode(code3)
+                            .train(t1)
+                            .route(mainRoute)
+                            .departureTime(targetDate.atTime(19, 0))
+                            .arrivalTime(targetDate.plusDays(1).atTime(7, 30))
+                            .status("SCHEDULED")
+                            .build();
+                    generateTripStops(tripEvening);
+                    tripRepository.save(tripEvening);
+                }
+            }
+            log.info(">>> Seeded/Verified Daily Trips for 14 days starting from {}", today);
+        }
     }
 
     private List<Carriage> createDefaultCarriages(Train train) {

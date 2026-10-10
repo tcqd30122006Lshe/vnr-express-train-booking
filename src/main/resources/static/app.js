@@ -584,10 +584,22 @@ async function handleSearchTrips(event) {
     currentSearchResults = data.result || [];
 
     const filterWrapper = document.getElementById('filter-pills-wrapper');
-    if (filterWrapper) filterWrapper.style.display = 'flex';
+    if (filterWrapper) {
+      filterWrapper.style.display = currentSearchResults.length > 0 ? 'flex' : 'none';
+    }
 
-    const sortType = document.getElementById('sort-trips-select')?.value || 'PRICE_LOW';
-    sortSearchResults(sortType);
+    if (currentSearchResults.length === 0) {
+      renderSearchResults([]);
+      showToast('ℹ️ Không có chuyến tàu nào vào ngày đã chọn. Vui lòng chọn ngày khác!', 'info');
+    } else {
+      showToast(`🎉 Tìm thấy ${currentSearchResults.length} chuyến tàu phù hợp!`, 'success');
+      const sortType = document.getElementById('sort-trips-select')?.value || 'PRICE_LOW';
+      sortSearchResults(sortType);
+    }
+
+    setTimeout(() => {
+      document.getElementById('search-results-section')?.scrollIntoView({ behavior: 'smooth' });
+    }, 150);
   } catch (error) {
     console.error('Lỗi khi tìm kiếm chuyến tàu:', error);
     showToast('❌ Lỗi kết nối máy chủ khi tìm chuyến tàu', 'error');
@@ -595,7 +607,10 @@ async function handleSearchTrips(event) {
 }
 
 function sortSearchResults(sortType) {
-  if (!currentSearchResults || currentSearchResults.length === 0) return;
+  if (!currentSearchResults || currentSearchResults.length === 0) {
+    renderSearchResults([]);
+    return;
+  }
 
   let trips = [...currentSearchResults];
   if (sortType === 'PRICE_LOW') {
@@ -637,20 +652,23 @@ function renderSearchResults(trips) {
   const container = document.getElementById('search-results-container');
   if (!container) return;
 
-  if (!trips || trips.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <span class="empty-icon">🚫</span>
-        <p>Không tìm thấy chuyến tàu nào phù hợp cho bộ lọc này.</p>
-      </div>
-    `;
-    return;
-  }
-
   const originSelect = document.getElementById('origin-select');
   const destSelect = document.getElementById('dest-select');
   const originName = originSelect && originSelect.selectedIndex > 0 ? originSelect.options[originSelect.selectedIndex].text.split(' (')[0] : 'Ga đi';
   const destName = destSelect && destSelect.selectedIndex > 0 ? destSelect.options[destSelect.selectedIndex].text.split(' (')[0] : 'Ga đến';
+  const departDate = document.getElementById('depart-date-select')?.value || '';
+
+  if (!trips || trips.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state" style="text-align: center; padding: 40px 20px; background: var(--surface-dark, #1e2230); border-radius: 12px; margin-top: 20px; border: 1px dashed rgba(255,255,255,0.15);">
+        <span class="empty-icon" style="font-size: 3rem; display: block; margin-bottom: 12px;">🚫</span>
+        <h4 style="margin: 0 0 8px; font-size: 1.25rem; color: #fff;">Không tìm thấy chuyến tàu nào</h4>
+        <p style="color: var(--gray-text, #94a3b8); margin: 0 0 12px;">Không có chuyến tàu nào từ <b>${escapeHtml(originName)}</b> đến <b>${escapeHtml(destName)}</b> vào ngày <b>${escapeHtml(departDate)}</b>.</p>
+        <p style="color: #ff6b35; font-size: 0.95rem; margin: 0;">💡 Gợi ý: Hãy thử chọn các ngày có chuyến tàu hoạt động như hôm nay hoặc những ngày sắp tới.</p>
+      </div>
+    `;
+    return;
+  }
 
   let html = `<h3 class="results-title">🎉 Danh Sách Chuyến Tàu Phù Hợp (${trips.length})</h3>`;
 
@@ -665,6 +683,7 @@ function renderSearchResults(trips) {
 
     const depTime = trip.departureTime ? trip.departureTime.substring(11, 16) : '08:00';
     const arrTime = trip.arrivalTime ? trip.arrivalTime.substring(11, 16) : '20:30';
+    const currentTripId = trip.tripId || trip.id;
 
     html += `
       <article class="trip-card">
@@ -702,7 +721,7 @@ function renderSearchResults(trips) {
 
           <div class="trip-price-wrapper" style="margin-left: 24px;">
             <p class="trip-price-text">${formattedPrice} VNĐ</p>
-            <button type="button" class="btn btn-primary" onclick="openBookingModal(${trip.id}, ${trip.basePrice || 750000})">
+            <button type="button" class="btn btn-primary" onclick="openBookingModal(${currentTripId}, ${trip.basePrice || 750000})">
               🎟️ Chọn Chuyến này
             </button>
           </div>
