@@ -42,6 +42,17 @@ public class TrainServiceImpl implements TrainService {
                 .basePricePerKm(request.getBasePricePerKm() != null ? request.getBasePricePerKm() : 1000.0)
                 .build();
 
+        if (request.getCarriages() == null || request.getCarriages().isEmpty()) {
+            throw new AppException(ErrorCode.CARRIAGE_LIST_EMPTY);
+        }
+
+        java.util.Set<Integer> carriageNumbers = new java.util.HashSet<>();
+        for (CarriageCreationRequest req : request.getCarriages()) {
+            if (!carriageNumbers.add(req.getCarriageNumber())) {
+                throw new AppException(ErrorCode.DUPLICATE_CARRIAGE_NUMBER);
+            }
+        }
+
         List<Carriage> carriageList = new ArrayList<>();
         for (CarriageCreationRequest carriageCreationRequest : request.getCarriages()) {
             Carriage carriage = Carriage.builder()

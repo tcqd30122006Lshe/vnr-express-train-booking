@@ -77,8 +77,16 @@ public class BookingServiceImpl implements com.trainbooking.service.BookingServi
         double distance = Math.abs(endDistance - startDistance);
         double ticketPrice = distance * (trip.getTrain().getBasePricePerKm() != null ? trip.getTrain().getBasePricePerKm() : 1000.0);
 
+        if (request.getTickets() == null || request.getTickets().isEmpty()) {
+            throw new AppException(ErrorCode.TICKET_LIST_EMPTY);
+        }
+
         List<Ticket> tickets = new ArrayList<>();
+        java.util.Set<Long> requestedSeatIds = new java.util.HashSet<>();
         for (TicketRequest tk : request.getTickets()) {
+            if (!requestedSeatIds.add(tk.getSeatId())) {
+                throw new AppException(ErrorCode.SEAT_ALREADY_BOOKED);
+            }
             Seat seat = seatRepository.findById(tk.getSeatId())
                     .orElseThrow(() -> new AppException(ErrorCode.SEAT_NOT_FOUND));
 
@@ -193,12 +201,29 @@ public class BookingServiceImpl implements com.trainbooking.service.BookingServi
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public void cancelBooking(String bookingCode) {
         Booking booking = bookingRepository.findByBookingCode(bookingCode)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
 
         // Chống lỗ hổng IDOR: Chỉ chủ sở hữu đơn vé hoặc ADMIN mới được hủy vé
         checkBookingOwnership(booking);
+
+        if ("CANCELLED".equals(booking.getStatus())) {
+            return;
+        }
+
+        // Kiểm tra giờ khởi hành: Không thể hủy nếu tàu đã chạy hoặc dưới 4 tiếng
+        if (booking.getTickets() != null && !booking.getTickets().isEmpty()) {
+            Ticket firstTicket = booking.getTickets().get(0);
+            if (firstTicket.getTrip() != null && firstTicket.getTrip().getDepartureTime() != null) {
+                LocalDateTime departureTime = firstTicket.getTrip().getDepartureTime();
+                LocalDateTime now = LocalDateTime.now();
+                if (now.isAfter(departureTime) || java.time.Duration.between(now, departureTime).toHours() < 4) {
+                    throw new AppException(ErrorCode.CANCELLATION_TIME_EXPIRED);
+                }
+            }
+        }
 
         booking.setStatus("CANCELLED");
         if(booking.getTickets()!=null){
@@ -211,10 +236,13 @@ public class BookingServiceImpl implements com.trainbooking.service.BookingServi
 
     private void checkBookingOwnership(Booking booking) {
         org.springframework.security.core.Authentication authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName())) {
-            boolean isAdmin = authentication.getAuthorities().stream()
-                    .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
-            if (!isAdmin && booking.getUserUsername() != null && !booking.getUserUsername().equals(authentication.getName())) {
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getName())) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()) || "ADMIN".equals(a.getAuthority()));
+        if (!isAdmin) {
+            if (booking.getUserUsername() == null || !booking.getUserUsername().equals(authentication.getName())) {
                 throw new AppException(ErrorCode.UNAUTHORIZED);
             }
         }

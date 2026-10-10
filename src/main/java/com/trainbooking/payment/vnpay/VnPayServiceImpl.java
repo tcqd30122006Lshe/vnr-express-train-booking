@@ -159,9 +159,31 @@ public class VnPayServiceImpl implements VnPayService {
         if ("00".equals(responseCode)) {
             Booking booking = bookingRepository.findByBookingCode(bookingCode)
                     .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-                    
-            // Kiểm tra số tiền thanh toán có khớp không
-            long vnpAmount = Long.parseLong(queryParams.get("vnp_Amount"));
+
+            // Đảm bảo tính Idempotent: Nếu đã CONFIRMED từ trước thì trả về OK luôn
+            if ("CONFIRMED".equalsIgnoreCase(booking.getStatus())) {
+                return PaymentResponse.builder()
+                        .status("OK")
+                        .message("Giao dịch thanh toán đã được ghi nhận trước đó.")
+                        .build();
+            }
+            if ("CANCELLED".equalsIgnoreCase(booking.getStatus())) {
+                return PaymentResponse.builder()
+                        .status("FAILED")
+                        .message("Đơn đặt vé đã bị hủy trước đó.")
+                        .build();
+            }
+
+            // Kiểm tra số tiền thanh toán có khớp không (chống tấn công sửa tiền)
+            long vnpAmount;
+            try {
+                vnpAmount = Long.parseLong(queryParams.get("vnp_Amount"));
+            } catch (NumberFormatException | NullPointerException e) {
+                return PaymentResponse.builder()
+                        .status("FAILED")
+                        .message("Tham số số tiền không hợp lệ! Nghi vấn gian lận.")
+                        .build();
+            }
             long expectedAmount = (long) (booking.getTotalAmount() * 100);
             if (vnpAmount != expectedAmount) {
                 return PaymentResponse.builder()

@@ -21,6 +21,7 @@ public class RouteController {
     RouteService routeService;
 
     @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<RouteResponse> createRoute(@RequestBody @Valid RouteCreationRequest request) {
         return ApiResponse.<RouteResponse>builder()
                 .code(1000)

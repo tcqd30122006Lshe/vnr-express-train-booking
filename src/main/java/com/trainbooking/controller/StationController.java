@@ -21,6 +21,7 @@ public class StationController {
     StationService stationService;
 
     @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<StationResponse> createStation(@RequestBody @Valid StationRequest request) {
         return ApiResponse.<StationResponse>builder()
                 .code(1000)

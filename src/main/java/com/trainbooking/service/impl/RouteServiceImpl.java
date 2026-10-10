@@ -35,6 +35,22 @@ public class RouteServiceImpl implements RouteService {
             throw new AppException(ErrorCode.ROUTE_EXISTED);
         }
 
+        if (request.getStations() == null || request.getStations().size() < 2) {
+            throw new AppException(ErrorCode.ROUTE_STATIONS_EMPTY);
+        }
+
+        // Validate không trùng ga và không trùng thứ tự trong cùng 1 tuyến
+        java.util.Set<Long> stationIds = new java.util.HashSet<>();
+        java.util.Set<Integer> orderIndices = new java.util.HashSet<>();
+        for (var item : request.getStations()) {
+            if (!stationIds.add(item.getStationId())) {
+                throw new AppException(ErrorCode.DUPLICATE_STATION_IN_ROUTE);
+            }
+            if (!orderIndices.add(item.getOrderIndex())) {
+                throw new AppException(ErrorCode.ORDER_INDEX_NULL);
+            }
+        }
+
         // 2. Khởi tạo đối tượng Route
         Route route = Route.builder()
                 .code(request.getCode())

@@ -38,6 +38,7 @@ public class TicketController {
     }
 
     @PostMapping("/verify-qr")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<String> verifyTicketQr(@RequestParam String qrData) {
         ticketService.verifyTicketQr(qrData);
         return ApiResponse.<String>builder()

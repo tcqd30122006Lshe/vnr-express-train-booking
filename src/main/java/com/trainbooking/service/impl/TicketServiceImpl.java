@@ -73,8 +73,11 @@ public class TicketServiceImpl implements TicketService {
         Ticket ticket= ticketRepository.findById(ticketId).orElseThrow(()-> new AppException(ErrorCode.TICKET_NOT_FOUND));
         checkTicketOwnership(ticket);
 
-        if(!"VALID".equalsIgnoreCase(ticket.getStatus())){
-            throw new AppException(ErrorCode.INVALID_KEY);
+        if ("CANCELLED".equalsIgnoreCase(ticket.getStatus())) {
+            throw new AppException(ErrorCode.CANCELLATION_TIME_EXPIRED, "Vé này đã bị hủy trước đó.");
+        }
+        if (!"VALID".equalsIgnoreCase(ticket.getStatus())) {
+            throw new AppException(ErrorCode.INVALID_KEY, "Vé không ở trạng thái hợp lệ để hủy (Trạng thái: " + ticket.getStatus() + ").");
         }
         // 3. Tính khoảng thời gian từ bây giờ đến giờ tàu chạy (departureTime)
         LocalDateTime now = LocalDateTime.now();
@@ -137,10 +140,13 @@ public class TicketServiceImpl implements TicketService {
 
     private void checkTicketOwnership(Ticket ticket) {
         org.springframework.security.core.Authentication authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName())) {
-            boolean isAdmin = authentication.getAuthorities().stream()
-                    .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
-            if (!isAdmin && ticket.getBooking() != null && ticket.getBooking().getUserUsername() != null && !ticket.getBooking().getUserUsername().equals(authentication.getName())) {
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getName())) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()) || "ADMIN".equals(a.getAuthority()));
+        if (!isAdmin) {
+            if (ticket.getBooking() == null || ticket.getBooking().getUserUsername() == null || !ticket.getBooking().getUserUsername().equals(authentication.getName())) {
                 throw new AppException(ErrorCode.UNAUTHORIZED);
             }
         }

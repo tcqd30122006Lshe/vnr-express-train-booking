@@ -21,6 +21,7 @@ public class TrainController {
     TrainService trainService;
 
     @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<TrainResponse> createTrain(@RequestBody @Valid TrainCreationRequest request) {
         return ApiResponse.<TrainResponse>builder()
                 .code(1000)
