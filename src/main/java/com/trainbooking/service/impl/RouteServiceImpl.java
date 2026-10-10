@@ -102,15 +102,17 @@ public class RouteServiceImpl implements RouteService {
 
     // Helper method: Dùng Java Stream chuyển đổi Route Entity -> RouteResponse DTO
     private RouteResponse mapToResponse(Route route) {
-        List<RouteStationResponse> stationResponses = route.getRouteStationList().stream()
-                .map(rs -> RouteStationResponse.builder()
-                        .stationId(rs.getStation().getId())
-                        .stationCode(rs.getStation().getCode())
-                        .stationName(rs.getStation().getName())
-                        .orderIndex(rs.getOrderIndex())
-                        .distanceFromOrigin(rs.getDistanceFromOrigin())
-                        .build())
-                .toList();
+        List<RouteStationResponse> stationResponses = (route.getRouteStationList() != null)
+                ? route.getRouteStationList().stream()
+                        .map(rs -> RouteStationResponse.builder()
+                                .stationId(rs.getStation() != null ? rs.getStation().getId() : null)
+                                .stationCode(rs.getStation() != null ? rs.getStation().getCode() : null)
+                                .stationName(rs.getStation() != null ? rs.getStation().getName() : null)
+                                .orderIndex(rs.getOrderIndex())
+                                .distanceFromOrigin(rs.getDistanceFromOrigin())
+                                .build())
+                        .toList()
+                : java.util.List.of();
 
         return RouteResponse.builder()
                 .id(route.getId())

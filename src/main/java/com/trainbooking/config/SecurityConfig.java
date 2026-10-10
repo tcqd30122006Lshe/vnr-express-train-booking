@@ -41,6 +41,8 @@ public class SecurityConfig {
             "/js/**",
             "/images/**",
             "/api/v1/stations/**",
+            "/api/v1/routes/**",
+            "/api/v1/trains/**",
             "/api/v1/trips/**",
             "/api/v1/payments/**",
             "/swagger-ui/**",
