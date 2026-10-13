@@ -206,6 +206,16 @@ public class VnPayServiceImpl implements VnPayService {
                     .message("Thanh toán thành công! Vé đi tàu của bạn đã chính thức có hiệu lực.")
                     .build();
         } else {
+            // Thanh toán thất bại hoặc người dùng hủy giao dịch trên VNPAY -> giải phóng ghế
+            Booking booking = bookingRepository.findByBookingCode(bookingCode).orElse(null);
+            if (booking != null && "PENDING".equalsIgnoreCase(booking.getStatus())) {
+                booking.setStatus("CANCELLED");
+                if (booking.getTickets() != null) {
+                    booking.getTickets().forEach(t -> t.setStatus("CANCELLED"));
+                }
+                bookingRepository.save(booking);
+                log.info("Booking {} and its tickets marked CANCELLED due to failed payment", bookingCode);
+            }
             return PaymentResponse.builder()
                     .status("FAILED")
                     .message("Thanh toán thất bại hoặc bị hủy bỏ.")

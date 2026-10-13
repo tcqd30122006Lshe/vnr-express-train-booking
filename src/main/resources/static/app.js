@@ -982,12 +982,35 @@ function openBookingModal(tripId, basePrice = 750000) {
   loadCarriageSeatMap(tripId, 1);
 }
 
-// Render Sơ đồ Ghế Tàu 4 Hàng (2 hàng trên - Lối đi - 2 hàng dưới)
-function loadCarriageSeatMap(tripId, carriageId) {
+// Render Sơ đồ Ghế Tàu 4 Hàng (kết nối trực tiếp API Backend)
+async function loadCarriageSeatMap(tripId, carriageId) {
   const seatContainer = document.getElementById('seat-grid-container');
   if (!seatContainer) return;
 
   selectedSeatIds = [];
+  document.getElementById('selected-seat-id').value = '';
+  const displayElem = document.getElementById('selected-seat-display');
+  if (displayElem) displayElem.innerText = 'Chưa chọn';
+
+  const originSelect = document.getElementById('origin-select');
+  const destSelect = document.getElementById('dest-select');
+  const startId = originSelect ? originSelect.value : null;
+  const endId = destSelect ? destSelect.value : null;
+
+  let seatsData = [];
+  if (tripId && startId && endId) {
+    try {
+      const res = await fetch(`${API_BASE}/trips/${tripId}/carriages/${carriageId}/seat-map?originStationId=${startId}&destStationId=${endId}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.result && json.result.seats) {
+          seatsData = json.result.seats;
+        }
+      }
+    } catch (err) {
+      console.warn('Could not fetch real seat map, using fallback', err);
+    }
+  }
 
   let html = `
     <div class="seat-rows-wrapper">
@@ -1005,15 +1028,29 @@ function loadCarriageSeatMap(tripId, carriageId) {
   const row3 = document.getElementById('row-3');
   const row4 = document.getElementById('row-4');
 
-  for (let i = 1; i <= 32; i++) {
-    const isBooked = (i % 7 === 0 || i % 11 === 0);
-    const statusClass = isBooked ? 'booked' : 'available';
-    const seatBtn = `<button type="button" class="seat-btn ${statusClass}" data-seat-id="${i}" data-seat-num="${i}" ${isBooked ? 'disabled' : ''} onclick="selectSeat(this, ${i})">${i}</button>`;
+  if (seatsData.length > 0) {
+    const quarter = Math.ceil(seatsData.length / 4);
+    seatsData.forEach((seat) => {
+      const isBooked = (seat.status === 'BOOKED');
+      const statusClass = isBooked ? 'booked' : 'available';
+      const seatBtn = `<button type="button" class="seat-btn ${statusClass}" data-seat-id="${seat.seatId}" data-seat-num="${seat.seatNumber}" ${isBooked ? 'disabled' : ''} onclick="selectSeat(this, ${seat.seatId})">${seat.seatNumber}</button>`;
 
-    if (i <= 8) row1.innerHTML += seatBtn;
-    else if (i <= 16) row2.innerHTML += seatBtn;
-    else if (i <= 24) row3.innerHTML += seatBtn;
-    else row4.innerHTML += seatBtn;
+      if (seat.seatNumber <= quarter) row1.innerHTML += seatBtn;
+      else if (seat.seatNumber <= quarter * 2) row2.innerHTML += seatBtn;
+      else if (seat.seatNumber <= quarter * 3) row3.innerHTML += seatBtn;
+      else row4.innerHTML += seatBtn;
+    });
+  } else {
+    for (let i = 1; i <= 28; i++) {
+      const isBooked = (i % 7 === 0 || i % 11 === 0);
+      const statusClass = isBooked ? 'booked' : 'available';
+      const seatBtn = `<button type="button" class="seat-btn ${statusClass}" data-seat-id="${i}" data-seat-num="${i}" ${isBooked ? 'disabled' : ''} onclick="selectSeat(this, ${i})">${i}</button>`;
+
+      if (i <= 7) row1.innerHTML += seatBtn;
+      else if (i <= 14) row2.innerHTML += seatBtn;
+      else if (i <= 21) row3.innerHTML += seatBtn;
+      else row4.innerHTML += seatBtn;
+    }
   }
 }
 

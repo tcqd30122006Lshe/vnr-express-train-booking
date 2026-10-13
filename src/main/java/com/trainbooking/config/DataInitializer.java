@@ -9,10 +9,11 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -23,43 +24,39 @@ public class DataInitializer {
     private final TrainRepository trainRepository;
     private final RouteRepository routeRepository;
     private final TripRepository tripRepository;
+    private final TransactionTemplate transactionTemplate;
 
     @PostConstruct
     public void init() {
-        log.info(">>> Running DataInitializer for Train Booking System...");
+        transactionTemplate.executeWithoutResult(status -> {
+            doInit();
+        });
+    }
 
-        // 1. Seed Stations if empty
-        if (stationRepository.count() == 0) {
-            Station hanoi = Station.builder().code("HAN").name("Ga Hà Nội").province("Hà Nội").build();
-            Station phuly = Station.builder().code("PLY").name("Ga Phủ Lý").province("Hà Nam").build();
-            Station namdinh = Station.builder().code("NDH").name("Ga Nam Định").province("Nam Định").build();
-            Station thanhhoa = Station.builder().code("THO").name("Ga Thanh Hóa").province("Thanh Hóa").build();
-            Station vinh = Station.builder().code("VII").name("Ga Vinh").province("Nghệ An").build();
-            Station hue = Station.builder().code("HUE").name("Ga Huế").province("Thừa Thiên Huế").build();
-            Station danang = Station.builder().code("DAN").name("Ga Đà Nẵng").province("Đà Nẵng").build();
-            Station nhatrang = Station.builder().code("NTR").name("Ga Nha Trang").province("Khánh Hòa").build();
-            Station saigon = Station.builder().code("SGO").name("Ga Sài Gòn").province("TP. Hồ Chí Minh").build();
+    private void doInit() {
+        log.info(">>> Running DataInitializer for Train Booking System (Inside Transaction)...");
 
-            stationRepository.saveAll(List.of(hanoi, phuly, namdinh, thanhhoa, vinh, hue, danang, nhatrang, saigon));
-            log.info(">>> Seeded 9 initial Train Stations (HAN, DAN, SGO...).");
-        }
+        // 1. Ensure all 9 Stations exist (with alias support for NDI/NDH and DNA/DAN)
+        Station han = getOrCreateStation("HAN", "Ga Hà Nội", "Hà Nội");
+        Station ply = getOrCreateStation("PLY", "Ga Phủ Lý", "Hà Nam");
+        Station ndh = stationRepository.findByCode("NDH")
+                .or(() -> stationRepository.findByCode("NDI"))
+                .orElseGet(() -> stationRepository.save(Station.builder().code("NDH").name("Ga Nam Định").province("Nam Định").build()));
+        Station tho = getOrCreateStation("THO", "Ga Thanh Hóa", "Thanh Hóa");
+        Station vii = getOrCreateStation("VII", "Ga Vinh", "Nghệ An");
+        Station hue = getOrCreateStation("HUE", "Ga Huế", "Thừa Thiên Huế");
+        Station dan = stationRepository.findByCode("DAN")
+                .or(() -> stationRepository.findByCode("DNA"))
+                .orElseGet(() -> stationRepository.save(Station.builder().code("DAN").name("Ga Đà Nẵng").province("Đà Nẵng").build()));
+        Station ntr = getOrCreateStation("NTR", "Ga Nha Trang", "Khánh Hòa");
+        Station sgo = getOrCreateStation("SGO", "Ga Sài Gòn", "TP. Hồ Chí Minh");
+        log.info(">>> Verified 9 Stations in database.");
 
-        // 2. Seed Trains with Carriages & Seats if empty
-        if (trainRepository.count() == 0) {
-            Train se1 = Train.builder().code("SE1").name("Tàu Bắc Nam Express SE1").speed(85.0).basePricePerKm(1200.0).build();
-            se1.setCarriages(createDefaultCarriages(se1));
+        // 2. Ensure Trains exist with Carriages & Seats
+        Train se1 = getOrCreateTrain("SE1", "Tàu Bắc Nam Express SE1", 85.0, 1200.0);
+        Train se3 = getOrCreateTrain("SE3", "Tàu Bắc Nam Express SE3", 80.0, 1100.0);
+        Train se7 = getOrCreateTrain("SE7", "Tàu Nhanh SE7", 75.0, 1000.0);
 
-            Train se3 = Train.builder().code("SE3").name("Tàu Bắc Nam Express SE3").speed(80.0).basePricePerKm(1100.0).build();
-            se3.setCarriages(createDefaultCarriages(se3));
-
-            Train se7 = Train.builder().code("SE7").name("Tàu Nhanh SE7").speed(75.0).basePricePerKm(1000.0).build();
-            se7.setCarriages(createDefaultCarriages(se7));
-
-            trainRepository.saveAll(List.of(se1, se3, se7));
-            log.info(">>> Seeded 3 initial Trains (SE1, SE3, SE7) with carriages and seats.");
-        }
-
-        // 3. Ensure all existing trains have speed, base price, carriages, and seats
         for (Train train : trainRepository.findAll()) {
             boolean updated = false;
             if (train.getSpeed() == null || train.getSpeed() <= 0) {
@@ -78,185 +75,111 @@ public class DataInitializer {
                 trainRepository.save(train);
             }
         }
+        log.info(">>> Verified Trains with carriages and seats.");
 
-        // 4. Seed Routes (HN-SG and SG-HN) with 9 RouteStations
-        List<Station> stations = stationRepository.findAll();
-        Map<String, Station> stationMap = stations.stream()
-                .collect(Collectors.toMap(Station::getCode, s -> s));
+        // 3. Seed Routes (HN-SG and SG-HN)
+        Route bacNam = routeRepository.findByCode("HN-SG").orElseGet(() -> {
+            Route r = Route.builder().code("HN-SG").name("Tuyến Đường Sắt Bắc Nam (Hà Nội - Sài Gòn)").build();
+            return routeRepository.save(r);
+        });
 
-        Station han = stationMap.get("HAN");
-        Station ply = stationMap.get("PLY");
-        Station ndh = stationMap.get("NDH");
-        Station tho = stationMap.get("THO");
-        Station vii = stationMap.get("VII");
-        Station hue = stationMap.get("HUE");
-        Station dan = stationMap.get("DAN");
-        Station ntr = stationMap.get("NTR");
-        Station sgo = stationMap.get("SGO");
-
-        if (han != null && sgo != null) {
-            // Tuyến Bắc - Nam (Hà Nội -> Sài Gòn)
-            Route bacNam = routeRepository.findByCode("HN-SG").orElseGet(() -> {
-                Route r = Route.builder().code("HN-SG").name("Tuyến Đường Sắt Bắc Nam (Hà Nội - Sài Gòn)").build();
-                return routeRepository.save(r);
-            });
-
-            if (bacNam.getRouteStationList() == null || bacNam.getRouteStationList().isEmpty()) {
-                List<RouteStation> bacNamStations = new ArrayList<>(List.of(
-                        RouteStation.builder().route(bacNam).station(han).orderIndex(1).distanceFromOrigin(0.0).build(),
-                        RouteStation.builder().route(bacNam).station(ply).orderIndex(2).distanceFromOrigin(56.0).build(),
-                        RouteStation.builder().route(bacNam).station(ndh).orderIndex(3).distanceFromOrigin(87.0).build(),
-                        RouteStation.builder().route(bacNam).station(tho).orderIndex(4).distanceFromOrigin(175.0).build(),
-                        RouteStation.builder().route(bacNam).station(vii).orderIndex(5).distanceFromOrigin(319.0).build(),
-                        RouteStation.builder().route(bacNam).station(hue).orderIndex(6).distanceFromOrigin(688.0).build(),
-                        RouteStation.builder().route(bacNam).station(dan).orderIndex(7).distanceFromOrigin(791.0).build(),
-                        RouteStation.builder().route(bacNam).station(ntr).orderIndex(8).distanceFromOrigin(1315.0).build(),
-                        RouteStation.builder().route(bacNam).station(sgo).orderIndex(9).distanceFromOrigin(1726.0).build()
-                ));
-                bacNam.setRouteStationList(bacNamStations);
-                routeRepository.save(bacNam);
-                log.info(">>> Seeded 9 route stations for HN-SG.");
-            }
-
-            // Tuyến Nam - Bắc (Sài Gòn -> Hà Nội)
-            Route namBac = routeRepository.findByCode("SG-HN").orElseGet(() -> {
-                Route r = Route.builder().code("SG-HN").name("Tuyến Đường Sắt Nam Bắc (Sài Gòn - Hà Nội)").build();
-                return routeRepository.save(r);
-            });
-
-            if (namBac.getRouteStationList() == null || namBac.getRouteStationList().isEmpty()) {
-                List<RouteStation> namBacStations = new ArrayList<>(List.of(
-                        RouteStation.builder().route(namBac).station(sgo).orderIndex(1).distanceFromOrigin(0.0).build(),
-                        RouteStation.builder().route(namBac).station(ntr).orderIndex(2).distanceFromOrigin(411.0).build(),
-                        RouteStation.builder().route(namBac).station(dan).orderIndex(3).distanceFromOrigin(935.0).build(),
-                        RouteStation.builder().route(namBac).station(hue).orderIndex(4).distanceFromOrigin(1038.0).build(),
-                        RouteStation.builder().route(namBac).station(vii).orderIndex(5).distanceFromOrigin(1407.0).build(),
-                        RouteStation.builder().route(namBac).station(tho).orderIndex(6).distanceFromOrigin(1551.0).build(),
-                        RouteStation.builder().route(namBac).station(ndh).orderIndex(7).distanceFromOrigin(1639.0).build(),
-                        RouteStation.builder().route(namBac).station(ply).orderIndex(8).distanceFromOrigin(1670.0).build(),
-                        RouteStation.builder().route(namBac).station(han).orderIndex(9).distanceFromOrigin(1726.0).build()
-                ));
-                namBac.setRouteStationList(namBacStations);
-                routeRepository.save(namBac);
-                log.info(">>> Seeded 9 route stations for SG-HN.");
-            }
+        if (bacNam.getRouteStationList() == null || bacNam.getRouteStationList().size() < 9) {
+            List<RouteStation> bacNamStations = new ArrayList<>(List.of(
+                    RouteStation.builder().route(bacNam).station(han).orderIndex(1).distanceFromOrigin(0.0).build(),
+                    RouteStation.builder().route(bacNam).station(ply).orderIndex(2).distanceFromOrigin(56.0).build(),
+                    RouteStation.builder().route(bacNam).station(ndh).orderIndex(3).distanceFromOrigin(87.0).build(),
+                    RouteStation.builder().route(bacNam).station(tho).orderIndex(4).distanceFromOrigin(175.0).build(),
+                    RouteStation.builder().route(bacNam).station(vii).orderIndex(5).distanceFromOrigin(319.0).build(),
+                    RouteStation.builder().route(bacNam).station(hue).orderIndex(6).distanceFromOrigin(688.0).build(),
+                    RouteStation.builder().route(bacNam).station(dan).orderIndex(7).distanceFromOrigin(791.0).build(),
+                    RouteStation.builder().route(bacNam).station(ntr).orderIndex(8).distanceFromOrigin(1315.0).build(),
+                    RouteStation.builder().route(bacNam).station(sgo).orderIndex(9).distanceFromOrigin(1726.0).build()
+            ));
+            bacNam.setRouteStationList(bacNamStations);
+            routeRepository.save(bacNam);
+            log.info(">>> Configured 9 route stations for HN-SG.");
         }
 
-        // 5. Seed Trips if empty or missing stops
-        List<Train> allTrains = trainRepository.findAll();
-        List<Route> allRoutes = routeRepository.findAll();
+        Route namBac = routeRepository.findByCode("SG-HN").orElseGet(() -> {
+            Route r = Route.builder().code("SG-HN").name("Tuyến Đường Sắt Nam Bắc (Sài Gòn - Hà Nội)").build();
+            return routeRepository.save(r);
+        });
 
-        if (tripRepository.count() == 0 && !allTrains.isEmpty() && !allRoutes.isEmpty()) {
-            Train se1 = allTrains.get(0);
-            Train se3 = allTrains.size() > 1 ? allTrains.get(1) : se1;
-            Train se7 = allTrains.size() > 2 ? allTrains.get(2) : se1;
-
-            Route routeHnSg = routeRepository.findByCode("HN-SG").orElse(allRoutes.get(0));
-            Route routeSgHn = routeRepository.findByCode("SG-HN").orElse(routeHnSg);
-
-            LocalDateTime now = LocalDateTime.now();
-
-            Trip trip1 = Trip.builder()
-                    .tripCode("TRIP-SE1-01")
-                    .train(se1)
-                    .route(routeHnSg)
-                    .departureTime(now.plusHours(2))
-                    .arrivalTime(now.plusHours(34))
-                    .status("SCHEDULED")
-                    .build();
-            generateTripStops(trip1);
-
-            Trip trip2 = Trip.builder()
-                    .tripCode("TRIP-SE3-02")
-                    .train(se3)
-                    .route(routeHnSg)
-                    .departureTime(now.plusHours(12))
-                    .arrivalTime(now.plusHours(44))
-                    .status("SCHEDULED")
-                    .build();
-            generateTripStops(trip2);
-
-            Trip trip3 = Trip.builder()
-                    .tripCode("TRIP-SE7-03")
-                    .train(se7)
-                    .route(routeSgHn)
-                    .departureTime(now.plusHours(6))
-                    .arrivalTime(now.plusHours(38))
-                    .status("SCHEDULED")
-                    .build();
-            generateTripStops(trip3);
-
-            tripRepository.saveAll(List.of(trip1, trip2, trip3));
-            log.info(">>> Seeded 3 initial Trips with full TripStops (TRIP-SE1-01, TRIP-SE3-02, TRIP-SE7-03).");
+        if (namBac.getRouteStationList() == null || namBac.getRouteStationList().size() < 9) {
+            List<RouteStation> namBacStations = new ArrayList<>(List.of(
+                    RouteStation.builder().route(namBac).station(sgo).orderIndex(1).distanceFromOrigin(0.0).build(),
+                    RouteStation.builder().route(namBac).station(ntr).orderIndex(2).distanceFromOrigin(411.0).build(),
+                    RouteStation.builder().route(namBac).station(dan).orderIndex(3).distanceFromOrigin(935.0).build(),
+                    RouteStation.builder().route(namBac).station(hue).orderIndex(4).distanceFromOrigin(1038.0).build(),
+                    RouteStation.builder().route(namBac).station(vii).orderIndex(5).distanceFromOrigin(1407.0).build(),
+                    RouteStation.builder().route(namBac).station(tho).orderIndex(6).distanceFromOrigin(1551.0).build(),
+                    RouteStation.builder().route(namBac).station(ndh).orderIndex(7).distanceFromOrigin(1639.0).build(),
+                    RouteStation.builder().route(namBac).station(ply).orderIndex(8).distanceFromOrigin(1670.0).build(),
+                    RouteStation.builder().route(namBac).station(han).orderIndex(9).distanceFromOrigin(1726.0).build()
+            ));
+            namBac.setRouteStationList(namBacStations);
+            routeRepository.save(namBac);
+            log.info(">>> Configured 9 route stations for SG-HN.");
         }
 
-        // 6. Ensure existing trips have trip stops
+        // 4. Update any existing trips that miss trip stops
         for (Trip trip : tripRepository.findAll()) {
             if (trip.getTripStops() == null || trip.getTripStops().isEmpty()) {
+                if (trip.getRoute() == null) {
+                    trip.setRoute(bacNam);
+                }
                 generateTripStops(trip);
                 tripRepository.save(trip);
                 log.info(">>> Generated TripStops for existing Trip: {}", trip.getTripCode());
             }
         }
 
-        // 7. Ensure Daily Trips for Today and next 14 days
-        if (!allRoutes.isEmpty() && !allTrains.isEmpty()) {
-            Route mainRoute = allRoutes.get(0);
-            Train t1 = allTrains.get(0);
-            Train t2 = allTrains.size() > 1 ? allTrains.get(1) : t1;
+        // 5. Seed Daily Trips for Today and next 14 days (Both directions)
+        LocalDate today = LocalDate.now();
+        for (int i = 0; i <= 14; i++) {
+            LocalDate targetDate = today.plusDays(i);
+            String dateSuffix = targetDate.toString().replace("-", "");
 
-            java.time.LocalDate today = java.time.LocalDate.now();
-            for (int i = 0; i <= 14; i++) {
-                java.time.LocalDate targetDate = today.plusDays(i);
-                String dateSuffix = targetDate.toString().replace("-", "");
+            // Tuyến Bắc - Nam: HN-SG
+            seedSingleTrip("SE1-" + dateSuffix, se1, bacNam, targetDate.atTime(8, 0));
+            seedSingleTrip("SE3-" + dateSuffix, se3, bacNam, targetDate.atTime(11, 30));
+            seedSingleTrip("SE7-" + dateSuffix, se7, bacNam, targetDate.atTime(19, 0));
 
-                // Chuyến sáng: 08:00
-                String code1 = "SE1-" + dateSuffix;
-                if (!tripRepository.existsByTripCode(code1)) {
-                    Trip tripMorning = Trip.builder()
-                            .tripCode(code1)
-                            .train(t1)
-                            .route(mainRoute)
-                            .departureTime(targetDate.atTime(8, 0))
-                            .arrivalTime(targetDate.atTime(20, 30))
-                            .status("SCHEDULED")
-                            .build();
-                    generateTripStops(tripMorning);
-                    tripRepository.save(tripMorning);
-                }
-
-                // Chuyến trưa: 11:30
-                String code2 = "SE3-" + dateSuffix;
-                if (!tripRepository.existsByTripCode(code2)) {
-                    Trip tripNoon = Trip.builder()
-                            .tripCode(code2)
-                            .train(t2)
-                            .route(mainRoute)
-                            .departureTime(targetDate.atTime(11, 30))
-                            .arrivalTime(targetDate.atTime(23, 30))
-                            .status("SCHEDULED")
-                            .build();
-                    generateTripStops(tripNoon);
-                    tripRepository.save(tripNoon);
-                }
-
-                // Chuyến tối: 19:00
-                String code3 = "SE7-" + dateSuffix;
-                if (!tripRepository.existsByTripCode(code3)) {
-                    Trip tripEvening = Trip.builder()
-                            .tripCode(code3)
-                            .train(t1)
-                            .route(mainRoute)
-                            .departureTime(targetDate.atTime(19, 0))
-                            .arrivalTime(targetDate.plusDays(1).atTime(7, 30))
-                            .status("SCHEDULED")
-                            .build();
-                    generateTripStops(tripEvening);
-                    tripRepository.save(tripEvening);
-                }
-            }
-            log.info(">>> Seeded/Verified Daily Trips for 14 days starting from {}", today);
+            // Tuyến Nam - Bắc: SG-HN
+            seedSingleTrip("SE2-" + dateSuffix, se1, namBac, targetDate.atTime(8, 30));
+            seedSingleTrip("SE4-" + dateSuffix, se3, namBac, targetDate.atTime(12, 0));
+            seedSingleTrip("SE8-" + dateSuffix, se7, namBac, targetDate.atTime(19, 30));
         }
+        log.info(">>> Seeded/Verified Daily Trips for 14 days starting from {} in both directions.", today);
+    }
+
+    private void seedSingleTrip(String code, Train train, Route route, LocalDateTime departureTime) {
+        if (!tripRepository.existsByTripCode(code)) {
+            Trip trip = Trip.builder()
+                    .tripCode(code)
+                    .train(train)
+                    .route(route)
+                    .departureTime(departureTime)
+                    .arrivalTime(departureTime.plusHours(30))
+                    .status("SCHEDULED")
+                    .build();
+            generateTripStops(trip);
+            tripRepository.save(trip);
+        }
+    }
+
+    private Station getOrCreateStation(String code, String name, String province) {
+        return stationRepository.findByCode(code).orElseGet(() ->
+                stationRepository.save(Station.builder().code(code).name(name).province(province).build())
+        );
+    }
+
+    private Train getOrCreateTrain(String code, String name, Double speed, Double basePricePerKm) {
+        return trainRepository.findByCode(code).orElseGet(() -> {
+            Train t = Train.builder().code(code).name(name).speed(speed).basePricePerKm(basePricePerKm).build();
+            t.setCarriages(createDefaultCarriages(t));
+            return trainRepository.save(t);
+        });
     }
 
     private List<Carriage> createDefaultCarriages(Train train) {

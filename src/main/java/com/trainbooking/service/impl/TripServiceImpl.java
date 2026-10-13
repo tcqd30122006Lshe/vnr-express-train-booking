@@ -217,7 +217,19 @@ public class TripServiceImpl implements TripService {
     @Transactional(readOnly = true)
     public CarriageSeatMapResponse getCarriageSeatMap(Long id, Long carriageId, Long originStationId, Long destStationId) {
         Trip trip = tripRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.TRIP_NOT_FOUND));
-        Carriage carriage = carriageRepository.findById(carriageId).orElseThrow(() -> new AppException(ErrorCode.CARRIAGE_NOT_FOUND));
+        
+        Carriage carriage = null;
+        if (trip.getTrain() != null && trip.getTrain().getCarriages() != null) {
+            for (Carriage c : trip.getTrain().getCarriages()) {
+                if (c.getId().equals(carriageId) || (c.getCarriageNumber() != null && c.getCarriageNumber().equals(carriageId.intValue()))) {
+                    carriage = c;
+                    break;
+                }
+            }
+        }
+        if (carriage == null) {
+            carriage = carriageRepository.findById(carriageId).orElseThrow(() -> new AppException(ErrorCode.CARRIAGE_NOT_FOUND));
+        }
 
         Integer originIndex = trip.getTripStops()
                 .stream()
@@ -236,9 +248,9 @@ public class TripServiceImpl implements TripService {
             throw new AppException(ErrorCode.INVALID_JOURNEY);
         }
         List<Long> bookedSeatIds = ticketRepository.findBookedSeatIds(
-                trip.getId(), carriageId, originIndex, destIndex
+                trip.getId(), carriage.getId(), originIndex, destIndex
         );
-        List<SeatStatusResponse> seatStatuses=carriage.getSeats().stream()
+        List<SeatStatusResponse> seatStatuses = carriage.getSeats().stream()
                 .map(seat ->
                     SeatStatusResponse.builder()
                             .seatId(seat.getId())
@@ -248,7 +260,7 @@ public class TripServiceImpl implements TripService {
                             .build()
                 ).toList();
         return CarriageSeatMapResponse.builder()
-                .carriageId(carriageId)
+                .carriageId(carriage.getId())
                 .carriageNumber(carriage.getCarriageNumber())
                 .carriageType(carriage.getCarriageType())
                 .totalSeats(carriage.getTotalSeats())

@@ -55,13 +55,19 @@ public class TicketServiceImpl implements TicketService {
         Long ticketId=Long.parseLong(parts[1]);
         Ticket ticket=ticketRepository.findById(ticketId).orElseThrow(()->new AppException(ErrorCode.TICKET_NOT_FOUND));
 
-        String status=ticket.getStatus();
+        String status = ticket.getStatus();
 
-        if (status.equals("VALID")) {
+        if ("VALID".equalsIgnoreCase(status)) {
             ticket.setStatus("USED");
             ticketRepository.save(ticket);
-        }else if(status.equals("USED")){
+        } else if ("USED".equalsIgnoreCase(status)) {
             throw new AppException(ErrorCode.TICKET_HAS_USED);
+        } else if ("CANCELLED".equalsIgnoreCase(status)) {
+            throw new AppException(ErrorCode.INVALID_QR_CODE, "Vé này đã bị hủy, không thể sử dụng để lên tàu.");
+        } else if ("PENDING".equalsIgnoreCase(status)) {
+            throw new AppException(ErrorCode.INVALID_QR_CODE, "Vé chưa được thanh toán thành công.");
+        } else {
+            throw new AppException(ErrorCode.INVALID_QR_CODE, "Trạng thái vé không hợp lệ: " + status);
         }
 
 
