@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cổng Thanh Toán VNPAY Sandbox - VNR Express</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --vnpay-blue: #005baa;
+      --vnpay-red: #ed1c24;
+      --bg-gray: #f4f6f9;
+      --text-dark: #1e293b;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --card-bg: #ffffff;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-gray);
+      color: var(--text-dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+    }
+
+    .vnpay-container {
+      width: 100%;
+      max-width: 580px;
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+
+    .vnpay-header {
+      background: white;
+      padding: 20px 24px;
+      border-bottom: 2px solid #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .vnpay-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .vnpay-logo-badge {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--vnpay-blue);
+      letter-spacing: -0.5px;
+    }
+
+    .vnpay-logo-badge span {
+      color: var(--vnpay-red);
+    }
+
+    .sandbox-tag {
+      background: #fef2f2;
+      color: var(--vnpay-red);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid #fecaca;
+      text-transform: uppercase;
+    }
+
+    .order-info-banner {
+      background: linear-gradient(135deg, #005baa 0%, #003e75 100%);
+      color: white;
+      padding: 20px 24px;
+    }
+
+    .order-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .order-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .order-label {
+      color: #93c5fd;
+    }
+
+    .order-amount {
+      font-size: 26px;
+      font-weight: 800;
+      color: #ffffff;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .order-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: #fde047;
+    }
+
+    .vnpay-body {
+      padding: 24px;
+    }
+
+    .bank-card-selector {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .bank-icon {
+      width: 44px;
+      height: 44px;
+      background: #ffffff;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    }
+
+    .bank-details h4 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .bank-details p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: inherit;
+      color: #0f172a;
+      transition: border-color 0.15s ease;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--vnpay-blue);
+      box-shadow: 0 0 0 3px rgba(0, 91, 170, 0.12);
+    }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .form-row .form-group {
+      flex: 1;
+    }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 1px;
+    }
+
+    .btn-quick-fill {
+      width: 100%;
+      background: #f1f5f9;
+      color: #005baa;
+      border: 1px dashed #93c5fd;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 20px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-quick-fill:hover {
+      background: #e0f2fe;
+    }
+
+    .btn-pay {
+      width: 100%;
+      background: var(--vnpay-red);
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(237, 28, 36, 0.3);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-pay:hover {
+      background: #d61820;
+      transform: translateY(-1px);
+    }
+
+    .btn-cancel {
+      width: 100%;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border-color);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.15s ease;
+    }
+
+    .btn-cancel:hover {
+      background: #f8fafc;
+      color: #0f172a;
+    }
+
+    .vnpay-footer-note {
+      margin-top: 20px;
+      background: #eff6ff;
+      border-left: 4px solid var(--vnpay-blue);
+      padding: 12px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #1e3a8a;
+      line-height: 1.5;
+    }
+
+    .vnpay-copyright {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="vnpay-container">
+    <!-- HEADER -->
+    <div class="vnpay-header">
+      <div class="vnpay-brand">
+        <div class="vnpay-logo-badge">VN<span>PAY</span><sup>QR</sup></div>
+      </div>
+      <span class="sandbox-tag">🧪 Simulator Test</span>
+    </div>
+
+    <!-- ORDER SUMMARY -->
+    <div class="order-info-banner">
+      <div class="order-row">
+        <span class="order-label">Mã đơn hàng VNR:</span>
+        <span class="order-code" id="view-booking-code">BK-E8C206B0</span>
+      </div>
+      <div class="order-row">
+        <span class="order-label">Nhà cung cấp:</span>
+        <span style="font-weight: 600;">ĐƯỜNG SẮT VIỆT NAM (VNR)</span>
+      </div>
+      <div class="order-row" style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 10px;">
+        <span class="order-label">Số tiền cần thanh toán:</span>
+        <span class="order-amount" id="view-total-amount">87.000 VNĐ</span>
+      </div>
+    </div>
+
+    <!-- FORM INPUT -->
+    <div class="vnpay-body">
+      <div class="bank-card-selector">
+        <div class="bank-icon">🏦</div>
+        <div class="bank-details">
+          <h4>Ngân Hàng Quốc Dân (NCB Sandbox)</h4>
+          <p>Cổng thanh toán thẻ nội địa thử nghiệm VNPAY</p>
+        </div>
+      </div>
+
+      <button type="button" class="btn-quick-fill" onclick="autoFillTestCard()">
+        ⚡ Nhấn để Tự Động Điền Thẻ Thử Nghiệm NCB
+      </button>
+
+      <form id="vnpay-simulator-form" onsubmit="handleConfirmPayment(event)">
+        <div class="form-group">
+          <label class="form-label">Số Thẻ Ngân Hàng:</label>
+          <input type="text" id="input-card-number" class="form-input font-mono" value="9704198526191432198" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Tên Chủ Thẻ (Không dấu):</label>
+          <input type="text" id="input-card-holder" class="form-input" value="NGUYEN VAN A" style="text-transform: uppercase;" required />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Ngày Phát Hành (MM/YY):</label>
+            <input type="text" id="input-card-date" class="form-input font-mono" value="07/15" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mã OTP Xác Thực:</label>
+            <input type="text" id="input-card-otp" class="form-input font-mono" value="123456" required />
+          </div>
+        </div>
+
+        <button type="submit" class="btn-pay" id="btn-submit-pay">
+          🔒 Xác Nhận & Thanh Toán Thành Công
+        </button>
+
+        <button type="button" class="btn-cancel" onclick="handleCancelPayment()">
+          ✕ Hủy Giao Dịch & Quay Lại Trang Chủ
+        </button>
+      </form>
+
+      <div class="vnpay-footer-note">
+        💡 <strong>Môi trường phát triển:</strong> Trang mô phỏng giúp bạn kiểm thử trọn vẹn 100% luồng xác nhận đơn vé và in vé điện tử mà không bị phụ thuộc vào thời gian phê duyệt của hệ thống VNPAY Sandbox bên ngoài.
+      </div>
+    </div>
+  </div>
+
+  <p class="vnpay-copyright">© 2026 VNPAY Sandbox Simulator & VNR Express. Bản quyền thuộc về VNR.</p>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const bookingCode = urlParams.get('bookingCode') || 'BK-TEST001';
+    const amount = urlParams.get('amount') || '87000';
+
+    document.getElementById('view-booking-code').innerText = bookingCode;
+    const formatted = Number(amount).toLocaleString('vi-VN');
+    document.getElementById('view-total-amount').innerText = `${formatted} VNĐ`;
+
+    function autoFillTestCard() {
+      document.getElementById('input-card-number').value = '9704198526191432198';
+      document.getElementById('input-card-holder').value = 'NGUYEN VAN A';
+      document.getElementById('input-card-date').value = '07/15';
+      document.getElementById('input-card-otp').value = '123456';
+    }
+
+    function handleConfirmPayment(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-submit-pay');
+      btn.innerText = '⏳ Đang xử lý giao dịch...';
+      btn.disabled = true;
+
+      // Chuyển hướng tới API cập nhật trạng thái đơn vé CONFIRMED
+      setTimeout(() => {
+        window.location.href = `/api/v1/payments/simulate-success/${bookingCode}`;
+      }, 600);
+    }
+
+    function handleCancelPayment() {
+      window.location.href = `/index.html?paymentStatus=failed&bookingCode=${bookingCode}`;
+    }
+  </script>
+</body>
+</html>

@@ -1287,9 +1287,15 @@ async function handleCreateBooking(event) {
       document.getElementById('booking-modal').style.display = 'none';
 
       const payRadio = document.querySelector('input[name="paymentMethod"]:checked');
-      const paymentMethod = payRadio ? payRadio.value : 'VNPAY';
+      const paymentMethod = payRadio ? payRadio.value : 'VNPAY_SIMULATOR';
 
-      if (paymentMethod === 'VNPAY') {
+      if (paymentMethod === 'VNPAY_SIMULATOR') {
+        showToast(`🎉 Đặt vé thành công! Đang chuyển sang cổng VNPAY Test...`, 'info');
+        setTimeout(() => {
+          window.location.href = `/vnpay-sandbox.html?bookingCode=${bookingCode}&amount=${booking.totalAmount || 0}`;
+        }, 400);
+        return;
+      } else if (paymentMethod === 'VNPAY') {
         showToast(`🎉 Đặt vé thành công! Đang chuyển hướng sang cổng VNPAY...`, 'success');
         try {
           const payRes = await fetch(`${API_BASE}/payments/vnpay-pay/${bookingCode}`);
@@ -1363,9 +1369,14 @@ function openQrPaymentModal(bookingCode, totalAmount, method) {
 
   const finishBtn = document.getElementById('btn-finish-qr-payment');
   if (finishBtn) {
-    finishBtn.onclick = () => {
+    finishBtn.onclick = async () => {
       modal.style.display = 'none';
-      showToast(`🎉 Cảm ơn bạn! Đơn vé ${bookingCode} đang được hệ thống xác nhận.`, 'success');
+      showToast(`🎉 Cảm ơn bạn! Đơn vé ${bookingCode} đã thanh toán thành công.`, 'success');
+      try {
+        await fetch(`/api/v1/payments/simulate-success/${bookingCode}`);
+      } catch (e) {
+        console.warn('Lỗi đồng bộ trạng thái thanh toán:', e);
+      }
       if (typeof openPrintModal === 'function') {
         openPrintModal(bookingCode, 'Hành khách VNR', '', formattedAmount);
       }
