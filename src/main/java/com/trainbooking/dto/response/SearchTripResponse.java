@@ -22,6 +22,8 @@ public class SearchTripResponse {
     String trainCode;
 
     String originStationName;
+    Long originStationId;
+    Long destinationStationId;
     LocalDateTime departureTime;
 
     LocalDateTime arrivalTime;

@@ -514,6 +514,8 @@
 
         <form id="booking-form">
           <input type="hidden" id="booking-trip-id" />
+          <input type="hidden" id="booking-origin-id" />
+          <input type="hidden" id="booking-dest-id" />
           <input type="hidden" id="selected-seat-id" />
 
           <!-- CHỌN TOA TÀU -->
@@ -692,6 +694,32 @@
         <button type="button" class="btn btn-primary btn-block btn-lg margin-top-16" onclick="window.print()">
           🖨️ In Vé Điện Tử / Tải Mã QR
         </button>
+      </div>
+    </div>
+
+    <!-- MODAL THANH TOÁN QR (VIETQR / MOMO) -->
+    <div id="qr-payment-modal" class="modal-overlay" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title" id="qr-modal-title">📱 Quét Mã QR Thanh Toán</h3>
+          <button type="button" id="close-qr-modal-btn" class="modal-close-btn">✕</button>
+        </div>
+        <div class="modal-body text-center">
+          <p style="font-size: 14px; color: var(--white-muted, #94a3b8); margin-bottom: 12px;">
+            Mở App Ngân hàng hoặc Ví MoMo để quét mã thanh toán cho đơn vé:
+          </p>
+          <div style="background: white; padding: 12px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 14px rgba(0,0,0,0.25);">
+            <img id="qr-payment-image" src="" alt="Mã QR Thanh Toán" style="width: 210px; height: 210px; display: block;" />
+          </div>
+          <div style="margin-top: 14px; background: var(--surface-dark, #1e2230); padding: 12px 16px; border-radius: 8px; text-align: left;">
+            <p style="font-size: 13px; color: var(--gray-text, #94a3b8); margin: 3px 0;">Mã đơn vé: <strong id="qr-booking-code" class="text-primary font-mono">BK-XXXXXX</strong></p>
+            <p style="font-size: 13px; color: var(--gray-text, #94a3b8); margin: 3px 0;">Số tiền: <strong id="qr-amount" style="color: #10b981; font-size: 16px;">0 VNĐ</strong></p>
+            <p style="font-size: 13px; color: var(--gray-text, #94a3b8); margin: 3px 0;">Nội dung chuyển khoản: <strong id="qr-memo" class="font-mono" style="color: #fff;">BK-XXXXXX</strong></p>
+          </div>
+          <button type="button" id="btn-finish-qr-payment" class="btn btn-primary btn-block btn-lg margin-top-16">
+            ✅ Tôi Đã Chuyển Khoản Xong (Xem Vé)
+          </button>
+        </div>
       </div>
     </div>
 

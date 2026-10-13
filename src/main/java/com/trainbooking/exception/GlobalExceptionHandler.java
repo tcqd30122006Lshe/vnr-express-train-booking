@@ -41,12 +41,44 @@ public class GlobalExceptionHandler {
                         .build());
     }
 
+    @ExceptionHandler(value = org.springframework.http.converter.HttpMessageNotReadableException.class)
+    ResponseEntity<ApiResponse<?>> handlingHttpMessageNotReadableException(org.springframework.http.converter.HttpMessageNotReadableException exception) {
+        log.warn("Malformed JSON or invalid types: {}", exception.getMessage());
+        ApiResponse<?> apiResponse = ApiResponse.builder()
+                .code(ErrorCode.INVALID_KEY.getCode())
+                .message("Dữ liệu gửi lên không đúng định dạng JSON hoặc sai kiểu dữ liệu")
+                .build();
+        return ResponseEntity.status(ErrorCode.INVALID_KEY.getStatusCode()).body(apiResponse);
+    }
+
+    @ExceptionHandler(value = org.springframework.dao.DataIntegrityViolationException.class)
+    ResponseEntity<ApiResponse<?>> handlingDataIntegrityViolationException(org.springframework.dao.DataIntegrityViolationException exception) {
+        log.warn("Database constraint violation: {}", exception.getMessage());
+        ApiResponse<?> apiResponse = ApiResponse.builder()
+                .code(ErrorCode.INVALID_KEY.getCode())
+                .message("Dữ liệu bị trùng lặp hoặc vi phạm ràng buộc cơ sở dữ liệu")
+                .build();
+        return ResponseEntity.status(ErrorCode.INVALID_KEY.getStatusCode()).body(apiResponse);
+    }
+
+    @ExceptionHandler(value = IllegalArgumentException.class)
+    ResponseEntity<ApiResponse<?>> handlingIllegalArgumentException(IllegalArgumentException exception) {
+        ApiResponse<?> apiResponse = ApiResponse.builder()
+                .code(ErrorCode.INVALID_KEY.getCode())
+                .message(exception.getMessage() != null ? exception.getMessage() : ErrorCode.INVALID_KEY.getMessage())
+                .build();
+        return ResponseEntity.status(ErrorCode.INVALID_KEY.getStatusCode()).body(apiResponse);
+    }
+
     @ExceptionHandler(value = Exception.class)
     ResponseEntity<ApiResponse<?>> handlingRuntimeException(Exception exception) {
         log.error("Unhandled exception occurred: ", exception);
+        String message = (exception.getMessage() != null && !exception.getMessage().isBlank())
+                ? exception.getMessage()
+                : ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage();
         ApiResponse<?> apiResponse = ApiResponse.builder()
                 .code(ErrorCode.UNCATEGORIZED_EXCEPTION.getCode())
-                .message(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage())
+                .message(message)
                 .build();
 
         return ResponseEntity.status(ErrorCode.UNCATEGORIZED_EXCEPTION.getStatusCode()).body(apiResponse);
@@ -68,18 +100,24 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
     ResponseEntity<ApiResponse<?>> handlingValidation(MethodArgumentNotValidException exception) {
-        String enumKey = exception.getFieldError().getDefaultMessage();
-
         ErrorCode errorCode = ErrorCode.INVALID_KEY;
-        try {
-            errorCode = ErrorCode.valueOf(enumKey);
-        } catch (IllegalArgumentException e) {
-            // Giữ lại mặc định INVALID_KEY nếu message không phải tên enum
+        String message = "Dữ liệu không hợp lệ";
+
+        if (exception.getFieldError() != null) {
+            String enumKey = exception.getFieldError().getDefaultMessage();
+            if (enumKey != null) {
+                try {
+                    errorCode = ErrorCode.valueOf(enumKey);
+                    message = errorCode.getMessage();
+                } catch (IllegalArgumentException e) {
+                    message = enumKey;
+                }
+            }
         }
 
         ApiResponse<?> apiResponse = ApiResponse.builder()
                 .code(errorCode.getCode())
-                .message(exception.getFieldError().getDefaultMessage())
+                .message(message)
                 .build();
 
         return ResponseEntity.status(errorCode.getStatusCode()).body(apiResponse);

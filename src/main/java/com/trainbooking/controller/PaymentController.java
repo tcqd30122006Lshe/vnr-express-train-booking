@@ -27,10 +27,11 @@ public class PaymentController {
     }
 
     @GetMapping("/vnpay-callback")
-    public ApiResponse<PaymentResponse> vnPayCallBack(@RequestParam Map<String,String> queryParams){
-        return  ApiResponse.<PaymentResponse>builder()
-                .message("Xử lý phản hồi thành công")
-                .result(vnPayService.processVnPayCallback(queryParams))
-                .build();
+    public void vnPayCallBack(@RequestParam Map<String,String> queryParams, jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
+        PaymentResponse paymentResponse = vnPayService.processVnPayCallback(queryParams);
+        String bookingCode = queryParams.get("vnp_TxnRef");
+        boolean isSuccess = "00".equals(queryParams.get("vnp_ResponseCode")) && "OK".equalsIgnoreCase(paymentResponse.getStatus());
+        String redirectUrl = "/index.html?paymentStatus=" + (isSuccess ? "success" : "failed") + "&bookingCode=" + (bookingCode != null ? bookingCode : "");
+        response.sendRedirect(redirectUrl);
     }
 }

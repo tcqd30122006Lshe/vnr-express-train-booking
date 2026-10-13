@@ -200,6 +200,8 @@ public class TripServiceImpl implements TripService {
                     .tripCode(trip.getTripCode())
                     .trainCode(trip.getTrain() != null ? trip.getTrain().getCode() : null)
                     .trainName(trip.getTrain() != null ? trip.getTrain().getName() : null)
+                    .originStationId(originStop.getStation().getId())
+                    .destinationStationId(destStop.getStation().getId())
                     .originStationName(originStop.getStation().getName())
                     .departureTime(originStop.getDepartureTime())
                     .arrivalTime(destStop.getArrivalTime())

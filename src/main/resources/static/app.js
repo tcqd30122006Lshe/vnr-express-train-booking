@@ -35,6 +35,23 @@ document.addEventListener('DOMContentLoaded', () => {
   initDateConstraints();
   initNetworkMonitor();
 
+  // Kiểm tra callback thanh toán VNPAY từ URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const paymentStatus = urlParams.get('paymentStatus') || urlParams.get('vnpayStatus');
+  const returnBookingCode = urlParams.get('bookingCode');
+  if (paymentStatus === 'success' && returnBookingCode) {
+    showToast(`🎉 THANH TOÁN VNPAY THÀNH CÔNG! Đơn vé: ${returnBookingCode}`, 'success');
+    window.history.replaceState({}, document.title, window.location.pathname);
+    setTimeout(() => {
+      if (typeof openPrintModal === 'function') {
+        openPrintModal(returnBookingCode, 'Hành khách VNR', '', '');
+      }
+    }, 600);
+  } else if (paymentStatus === 'failed') {
+    showToast(`❌ Thanh toán VNPAY không thành công hoặc giao dịch đã bị hủy.`, 'error');
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
   // Search Form Submit
   const searchForm = document.getElementById('search-train-form');
   if (searchForm) {
@@ -721,7 +738,7 @@ function renderSearchResults(trips) {
 
           <div class="trip-price-wrapper" style="margin-left: 24px;">
             <p class="trip-price-text">${formattedPrice} VNĐ</p>
-            <button type="button" class="btn btn-primary" onclick="openBookingModal(${currentTripId}, ${trip.basePrice || 750000})">
+            <button type="button" class="btn btn-primary" onclick="openBookingModal(${currentTripId}, ${trip.basePrice || 750000}, ${trip.originStationId || null}, ${trip.destinationStationId || null})">
               🎟️ Chọn Chuyến này
             </button>
           </div>
@@ -942,7 +959,7 @@ function handleLogout() {
 // ==========================================
 // 14. MỞ MODAL ĐẶT VÉ VỚI TỰ ĐỘNG ĐIỀN THÔNG TIN USER & MULTI-SEAT SELECTION
 // ==========================================
-function openBookingModal(tripId, basePrice = 750000) {
+function openBookingModal(tripId, basePrice = 750000, originId = null, destId = null) {
   const token = localStorage.getItem('vnr_jwt_token');
   if (!token) {
     showToast('🔒 Bạn cần Đăng nhập trước khi thực hiện Đặt vé!', 'error');
@@ -956,7 +973,18 @@ function openBookingModal(tripId, basePrice = 750000) {
   const passengerCountSelect = document.getElementById('passenger-count-select');
   maxSeatsAllowed = parseInt(passengerCountSelect ? passengerCountSelect.value : '1');
 
+  const originSelect = document.getElementById('origin-select');
+  const destSelect = document.getElementById('dest-select');
+
+  const finalOriginId = originId || (originSelect ? originSelect.value : null) || 1;
+  const finalDestId = destId || (destSelect ? destSelect.value : null) || 3;
+
   document.getElementById('booking-trip-id').value = tripId;
+  const originInput = document.getElementById('booking-origin-id');
+  if (originInput) originInput.value = finalOriginId;
+  const destInput = document.getElementById('booking-dest-id');
+  if (destInput) destInput.value = finalDestId;
+
   document.getElementById('selected-seat-id').value = '';
   document.getElementById('selected-seat-display').innerText = 'Chưa chọn';
   document.getElementById('total-price-display').innerText = '0 VNĐ';
@@ -992,10 +1020,12 @@ async function loadCarriageSeatMap(tripId, carriageId) {
   const displayElem = document.getElementById('selected-seat-display');
   if (displayElem) displayElem.innerText = 'Chưa chọn';
 
+  const originInput = document.getElementById('booking-origin-id');
+  const destInput = document.getElementById('booking-dest-id');
   const originSelect = document.getElementById('origin-select');
   const destSelect = document.getElementById('dest-select');
-  const startId = originSelect ? originSelect.value : null;
-  const endId = destSelect ? destSelect.value : null;
+  const startId = (originInput && originInput.value) ? originInput.value : (originSelect ? originSelect.value : 1);
+  const endId = (destInput && destInput.value) ? destInput.value : (destSelect ? destSelect.value : 3);
 
   let seatsData = [];
   if (tripId && startId && endId) {
@@ -1161,7 +1191,7 @@ function updatePriceWithDiscount() {
 }
 
 // ==========================================
-// 16. TẠO ĐƠN ĐẶT VÉ
+// 16. TẠO ĐƠN ĐẶT VÉ & THANH TOÁN (VNPAY / VIETQR / MOMO)
 // ==========================================
 async function handleCreateBooking(event) {
   event.preventDefault();
@@ -1169,42 +1199,74 @@ async function handleCreateBooking(event) {
   const token = localStorage.getItem('vnr_jwt_token');
   if (!token) {
     showToast('🔒 Phiên đăng nhập đã hết hạn! Vui lòng đăng nhập lại.', 'error');
+    if (typeof openLoginModal === 'function') openLoginModal();
     return;
   }
 
-  const selectedSeatId = document.getElementById('selected-seat-id').value;
-  if (!selectedSeatId) {
-    showToast('⚠️ Vui lòng chọn 1 ghế tàu trên sơ đồ trước khi bấm Xác Nhận Đặt Vé!', 'error');
+  if (!selectedSeatIds || selectedSeatIds.length === 0) {
+    const rawVal = document.getElementById('selected-seat-id')?.value;
+    if (rawVal) {
+      selectedSeatIds = rawVal.split(',').map((s) => parseInt(s.trim())).filter(Boolean);
+    }
+  }
+
+  if (!selectedSeatIds || selectedSeatIds.length === 0) {
+    showToast('⚠️ Vui lòng chọn ít nhất 1 ghế tàu trên sơ đồ trước khi Xác Nhận Đặt Vé!', 'error');
     return;
   }
 
-  const tripId = document.getElementById('booking-trip-id').value;
-  const name = document.getElementById('customer-name').value;
-  const phone = document.getElementById('customer-phone').value;
-  const email = document.getElementById('customer-email').value;
-  const idCard = document.getElementById('passenger-idcard').value;
+  const tripIdVal = document.getElementById('booking-trip-id')?.value;
+  const name = document.getElementById('customer-name')?.value?.trim();
+  const phone = document.getElementById('customer-phone')?.value?.trim();
+  const email = document.getElementById('customer-email')?.value?.trim();
+  const idCard = document.getElementById('passenger-idcard')?.value?.trim();
 
+  if (!name) {
+    showToast('⚠️ Vui lòng nhập Họ và Tên hành khách!', 'error');
+    return;
+  }
+  if (!phone || !/^[0-9]{10}$/.test(phone)) {
+    showToast('⚠️ Số điện thoại phải gồm đúng 10 chữ số!', 'error');
+    return;
+  }
+  if (!email || !email.includes('@')) {
+    showToast('⚠️ Địa chỉ Email không hợp lệ!', 'error');
+    return;
+  }
+  if (!idCard) {
+    showToast('⚠️ Vui lòng nhập Số CCCD / Passport của hành khách!', 'error');
+    return;
+  }
+
+  const originInput = document.getElementById('booking-origin-id');
+  const destInput = document.getElementById('booking-dest-id');
   const originSelect = document.getElementById('origin-select');
   const destSelect = document.getElementById('dest-select');
 
-  const startId = originSelect ? originSelect.value : null;
-  const endId = destSelect ? destSelect.value : null;
+  const startId = (originInput && originInput.value) ? originInput.value : (originSelect ? originSelect.value : 1);
+  const endId = (destInput && destInput.value) ? destInput.value : (destSelect ? destSelect.value : 3);
+  const tripId = Number(tripIdVal || 1);
+
+  if (!startId || !endId || Number(startId) === 0 || Number(endId) === 0 || Number(startId) === Number(endId)) {
+    showToast('⚠️ Hành trình ga đi và ga đến không hợp lệ! Vui lòng chọn lại chuyến.', 'error');
+    return;
+  }
 
   const bookingData = {
     customerName: name,
     customerPhone: phone,
     customerEmail: email,
-    tripId: Number(tripId || 1),
+    tripId: tripId,
     startStationId: Number(startId),
     endStationId: Number(endId),
-    tickets: [
-      {
-        seatId: Number(selectedSeatId),
-        passengerName: name,
-        passengerIdCard: idCard,
-      },
-    ],
+    tickets: selectedSeatIds.map((sId) => ({
+      seatId: Number(sId),
+      passengerName: name,
+      passengerIdCard: idCard,
+    })),
   };
+
+  showToast('⏳ Đang xử lý tạo đơn đặt vé...', 'info');
 
   try {
     const response = await fetch(`${API_BASE}/bookings`, {
@@ -1219,10 +1281,34 @@ async function handleCreateBooking(event) {
     const data = await response.json();
 
     if (response.ok && data.result) {
+      const booking = data.result;
+      const bookingCode = booking.bookingCode || 'VNR-OK';
       stopHoldTimer();
-      showToast(`🎉 ĐẶT VÉ THÀNH CÔNG! Mã đơn vé: ${data.result.bookingCode || 'VNR-OK'}`, 'success');
       document.getElementById('booking-modal').style.display = 'none';
+
+      const payRadio = document.querySelector('input[name="paymentMethod"]:checked');
+      const paymentMethod = payRadio ? payRadio.value : 'VNPAY';
+
+      if (paymentMethod === 'VNPAY') {
+        showToast(`🎉 Đặt vé thành công! Đang chuyển hướng sang cổng VNPAY...`, 'success');
+        try {
+          const payRes = await fetch(`${API_BASE}/payments/vnpay-pay/${bookingCode}`);
+          const payJson = await payRes.json();
+          if (payRes.ok && payJson.result && payJson.result.paymentUrl) {
+            window.location.href = payJson.result.paymentUrl;
+            return;
+          }
+        } catch (payErr) {
+          console.warn('Lỗi khi mở cổng VNPAY:', payErr);
+        }
+        showToast(`⚠️ Không thể mở tự động link VNPAY. Mã đơn vé: ${bookingCode}`, 'info');
+      } else {
+        // VIETQR / MOMO
+        openQrPaymentModal(bookingCode, booking.totalAmount || 0, paymentMethod);
+      }
+
       document.getElementById('booking-form').reset();
+      selectedSeatIds = [];
       if (typeof loadMyBookings === 'function') {
         loadMyBookings();
       }
@@ -1231,7 +1317,60 @@ async function handleCreateBooking(event) {
     }
   } catch (error) {
     console.error('❌ Lỗi khi đặt vé:', error);
-    showToast('❌ Lỗi kết nối máy chủ!', 'error');
+    showToast('❌ Lỗi kết nối máy chủ Spring Boot!', 'error');
+  }
+}
+
+// Mở Modal Thanh Toán QR (VietQR Net hoặc Ví MoMo)
+function openQrPaymentModal(bookingCode, totalAmount, method) {
+  const modal = document.getElementById('qr-payment-modal');
+  if (!modal) return;
+
+  const titleElem = document.getElementById('qr-modal-title');
+  const codeElem = document.getElementById('qr-booking-code');
+  const amountElem = document.getElementById('qr-amount');
+  const memoElem = document.getElementById('qr-memo');
+  const imgElem = document.getElementById('qr-payment-image');
+
+  const formattedAmount = Number(totalAmount).toLocaleString('vi-VN');
+
+  if (codeElem) codeElem.innerText = bookingCode;
+  if (amountElem) amountElem.innerText = `${formattedAmount} VNĐ`;
+  if (memoElem) memoElem.innerText = `Thanh toan ve tau ${bookingCode}`;
+
+  if (method === 'MOMO') {
+    if (titleElem) titleElem.innerText = '📱 Quét Mã Ví MoMo';
+    if (imgElem) {
+      imgElem.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent('2|99|0987654321|VNR EXPRESS|admin@trainbooking.com|0|0|' + totalAmount + '|' + bookingCode + '|transfer_p2p')}`;
+    }
+  } else {
+    // VIETQR
+    if (titleElem) titleElem.innerText = '🏦 Quét Mã VietQR Net (MB Bank)';
+    if (imgElem) {
+      imgElem.src = `https://img.vietqr.io/image/MB-0987654321-compact2.png?amount=${totalAmount}&addInfo=${encodeURIComponent(bookingCode)}&accountName=VNR%20EXPRESS`;
+    }
+  }
+
+  modal.style.display = 'flex';
+
+  const closeBtn = document.getElementById('close-qr-modal-btn');
+  if (closeBtn) {
+    closeBtn.onclick = () => {
+      modal.style.display = 'none';
+      if (typeof loadMyBookings === 'function') loadMyBookings();
+    };
+  }
+
+  const finishBtn = document.getElementById('btn-finish-qr-payment');
+  if (finishBtn) {
+    finishBtn.onclick = () => {
+      modal.style.display = 'none';
+      showToast(`🎉 Cảm ơn bạn! Đơn vé ${bookingCode} đang được hệ thống xác nhận.`, 'success');
+      if (typeof openPrintModal === 'function') {
+        openPrintModal(bookingCode, 'Hành khách VNR', '', formattedAmount);
+      }
+      if (typeof loadMyBookings === 'function') loadMyBookings();
+    };
   }
 }
 
