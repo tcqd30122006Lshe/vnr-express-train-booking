@@ -1480,15 +1480,45 @@ async function loadMyBookings() {
 // ==========================================
 // 18. IN VÉ ĐIỆN TỬ MODAL PREVIEW
 // ==========================================
-function openPrintModal(code, name, phone, price) {
-  document.getElementById('print-ticket-code').innerText = code;
-  document.getElementById('print-customer-name').innerText = name;
-  document.getElementById('print-customer-phone').innerText = phone;
-  document.getElementById('print-total-price').innerText = `${price} VNĐ`;
+async function openPrintModal(code, name, phone, price) {
+  if (code) document.getElementById('print-ticket-code').innerText = code;
+  if (name) document.getElementById('print-customer-name').innerText = name;
+  if (phone) document.getElementById('print-customer-phone').innerText = phone;
+  if (price) document.getElementById('print-total-price').innerText = `${price} VNĐ`;
+
+  const token = localStorage.getItem('vnr_jwt_token');
+  if (token && code) {
+    try {
+      const res = await fetch(`${API_BASE}/bookings/${code}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok && data.result) {
+        const b = data.result;
+        if (b.customerName) document.getElementById('print-customer-name').innerText = b.customerName;
+        if (b.customerPhone) document.getElementById('print-customer-phone').innerText = b.customerPhone;
+        if (b.trainName || b.tripCode) document.getElementById('print-train-code').innerText = `${b.tripCode || ''} ${b.trainName || ''}`.trim();
+        if (b.startStationName && b.endStationName) {
+          const routeElem = document.getElementById('print-route-name');
+          if (routeElem) routeElem.innerText = `${b.startStationName} ➔ ${b.endStationName}`;
+        }
+        if (b.tickets && b.tickets.length > 0) {
+          const seatDescs = b.tickets.map(t => `Ghế ${t.seatNumber} (Toa ${t.carriageNumber})`).join(', ');
+          document.getElementById('print-seat-number').innerText = seatDescs;
+        }
+        if (b.totalAmount) {
+          document.getElementById('print-total-price').innerText = `${Number(b.totalAmount).toLocaleString('vi-VN')} VNĐ`;
+        }
+        name = b.customerName || name;
+      }
+    } catch (e) {
+      console.warn('Lỗi tải chi tiết vé:', e);
+    }
+  }
 
   const qrImg = document.getElementById('print-qr-image');
   if (qrImg) {
-    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=VNR_CHECKIN_TICKET_${code}_PASSENGER_${encodeURIComponent(name)}`;
+    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=VNR_CHECKIN_TICKET_${code}_PASSENGER_${encodeURIComponent(name || 'KHACH')}`;
   }
 
   const modal = document.getElementById('print-ticket-modal');
