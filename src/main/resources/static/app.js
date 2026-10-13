@@ -1029,15 +1029,16 @@ async function loadCarriageSeatMap(tripId, carriageId) {
   const row4 = document.getElementById('row-4');
 
   if (seatsData.length > 0) {
-    const quarter = Math.ceil(seatsData.length / 4);
+    seatsData.sort((a, b) => a.seatNumber - b.seatNumber);
     seatsData.forEach((seat) => {
       const isBooked = (seat.status === 'BOOKED');
       const statusClass = isBooked ? 'booked' : 'available';
       const seatBtn = `<button type="button" class="seat-btn ${statusClass}" data-seat-id="${seat.seatId}" data-seat-num="${seat.seatNumber}" ${isBooked ? 'disabled' : ''} onclick="selectSeat(this, ${seat.seatId})">${seat.seatNumber}</button>`;
 
-      if (seat.seatNumber <= quarter) row1.innerHTML += seatBtn;
-      else if (seat.seatNumber <= quarter * 2) row2.innerHTML += seatBtn;
-      else if (seat.seatNumber <= quarter * 3) row3.innerHTML += seatBtn;
+      const mod = seat.seatNumber % 4;
+      if (mod === 1) row1.innerHTML += seatBtn;
+      else if (mod === 2) row2.innerHTML += seatBtn;
+      else if (mod === 3) row3.innerHTML += seatBtn;
       else row4.innerHTML += seatBtn;
     });
   } else {
@@ -1046,9 +1047,10 @@ async function loadCarriageSeatMap(tripId, carriageId) {
       const statusClass = isBooked ? 'booked' : 'available';
       const seatBtn = `<button type="button" class="seat-btn ${statusClass}" data-seat-id="${i}" data-seat-num="${i}" ${isBooked ? 'disabled' : ''} onclick="selectSeat(this, ${i})">${i}</button>`;
 
-      if (i <= 7) row1.innerHTML += seatBtn;
-      else if (i <= 14) row2.innerHTML += seatBtn;
-      else if (i <= 21) row3.innerHTML += seatBtn;
+      const mod = i % 4;
+      if (mod === 1) row1.innerHTML += seatBtn;
+      else if (mod === 2) row2.innerHTML += seatBtn;
+      else if (mod === 3) row3.innerHTML += seatBtn;
       else row4.innerHTML += seatBtn;
     }
   }
@@ -1106,12 +1108,12 @@ function selectShortcutSeat(type) {
   if (type === 'window') {
     pool = pool.filter((s) => {
       const num = parseInt(s.getAttribute('data-seat-num'));
-      return (num >= 1 && num <= 8) || (num >= 25 && num <= 32);
+      return (num % 4 === 1 || num % 4 === 0);
     });
   } else if (type === 'aisle') {
     pool = pool.filter((s) => {
       const num = parseInt(s.getAttribute('data-seat-num'));
-      return (num >= 9 && num <= 24);
+      return (num % 4 === 2 || num % 4 === 3);
     });
   }
 
@@ -1119,8 +1121,8 @@ function selectShortcutSeat(type) {
 
   for (let i = 0; i < maxSeatsAllowed && i < pool.length; i++) {
     const seatBtn = pool[i];
-    const seatNum = parseInt(seatBtn.getAttribute('data-seat-num'));
-    selectedSeatIds.push(seatNum);
+    const seatId = parseInt(seatBtn.getAttribute('data-seat-id'));
+    selectedSeatIds.push(seatId);
     seatBtn.classList.remove('available');
     seatBtn.classList.add('selected');
   }

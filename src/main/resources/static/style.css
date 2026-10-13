@@ -1161,7 +1161,8 @@ input[type="password"].form-control {
 }
 
 .modal-card-large {
-  max-width: 760px;
+  max-width: 820px;
+  width: 96%;
 }
 
 @keyframes modalPopIn {
@@ -1331,39 +1332,44 @@ input[type="password"].form-control {
   background: var(--surface-dark);
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-lg);
-  padding: 24px;
+  padding: 20px;
   margin-bottom: 24px;
+  overflow-x: auto;
 }
 
 .seat-rows-wrapper {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-width: 500px;
 }
 
 .seat-row {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   justify-content: space-between;
 }
 
 .aisle-divider {
   text-align: center;
-  color: var(--gray-text);
+  color: #ff9800;
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 2px;
-  padding: 8px 0;
-  border-top: 1px dashed var(--surface-border);
-  border-bottom: 1px dashed var(--surface-border);
-  margin: 6px 0;
+  letter-spacing: 3px;
+  padding: 6px 0;
+  border-top: 1px dashed rgba(255, 152, 0, 0.35);
+  border-bottom: 1px dashed rgba(255, 152, 0, 0.35);
+  margin: 4px 0;
+  background: rgba(255, 152, 0, 0.05);
+  border-radius: 4px;
 }
 
 .seat-btn {
   flex: 1;
+  min-width: 40px;
   height: 44px;
   background: var(--gray-dark);
-  border: 1px solid var(--surface-border);
+  border: 1.5px solid var(--surface-border);
   border-radius: var(--radius-sm);
   color: var(--white);
   font-family: 'JetBrains Mono', monospace;
@@ -2003,506 +2009,6 @@ input[type="password"].form-control {
 
 .footer-links a:hover {
   color: var(--primary);
-}
-
-/* MODAL & HOLD TIMER */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.82);
-  backdrop-filter: blur(8px);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-}
-
-.modal-card {
-  background: var(--surface-card);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
-  padding: 32px;
-  width: 92%;
-  max-width: 440px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modal-card-large {
-  max-width: 580px;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--surface-border);
-}
-
-.modal-title {
-  color: var(--white);
-  font-size: 20px;
-  font-weight: 800;
-}
-
-.modal-close-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: none;
-  color: var(--gray-text);
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  font-size: 18px;
-  cursor: pointer;
-}
-
-.modal-close-btn:hover {
-  background: var(--danger-red);
-  color: #ffffff;
-}
-
-.hold-timer-bar {
-  background: rgba(255, 87, 34, 0.1);
-  border: 1px solid var(--primary-glow);
-  padding: 10px 16px;
-  border-radius: var(--radius-md);
-  margin-bottom: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--white);
-}
-
-.hold-timer-progress {
-  width: 100%;
-  height: 4px;
-  background: var(--gray-dark);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.hold-timer-progress .fill {
-  height: 100%;
-  width: 100%;
-  background: var(--primary);
-  transition: width 1s linear;
-}
-
-.quick-seat-actions {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
-
-.btn-seat-shortcut {
-  padding: 6px 12px;
-  background: var(--gray-dark);
-  border: 1px solid var(--surface-border);
-  border-radius: 20px;
-  color: var(--gray-text);
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.btn-seat-shortcut:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.payment-methods-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-top: 8px;
-}
-
-.payment-method-card {
-  background: var(--gray-dark);
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-md);
-  padding: 10px;
-  text-align: center;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.payment-method-card.active {
-  border-color: var(--primary);
-  background: rgba(255, 87, 34, 0.12);
-  color: var(--primary);
-}
-
-.payment-method-card input {
-  display: none;
-}
-
-.discount-detail-text {
-  font-size: 12px;
-  color: var(--success-green);
-  margin-top: 2px;
-}
-
-/* E-TICKET PRINT CARD */
-.e-ticket-card {
-  background: #ffffff;
-  color: #121212;
-  border-radius: var(--radius-md);
-  padding: 24px;
-  border: 2px dashed #cccccc;
-}
-
-.e-ticket-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 2px solid var(--primary);
-  padding-bottom: 12px;
-  margin-bottom: 16px;
-}
-
-.e-ticket-header h4 {
-  color: var(--primary-dark);
-  font-size: 15px;
-}
-
-.e-ticket-code {
-  font-weight: 800;
-  color: #121212;
-  font-size: 16px;
-}
-
-.e-ticket-body {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  margin-bottom: 20px;
-}
-
-/* CARRIAGE & SEAT MAP STYLES */
-.carriage-selector-section {
-  margin-bottom: 20px;
-  text-align: left;
-}
-
-.carriage-buttons {
-  display: flex;
-  gap: 12px;
-  margin-top: 10px;
-  flex-wrap: wrap;
-}
-
-.btn-carriage {
-  padding: 10px 18px;
-  background: var(--gray-dark);
-  color: var(--gray-text);
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-
-.btn-carriage.active,
-.btn-carriage:hover {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #ffffff;
-  box-shadow: 0 4px 12px var(--primary-glow);
-}
-
-.seat-legend {
-  display: flex;
-  justify-content: center;
-  gap: 24px;
-  margin: 18px 0;
-  padding: 12px;
-  background: #111217;
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  border: 1px solid var(--surface-border);
-  flex-wrap: wrap;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--gray-text);
-}
-
-.legend-box {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-}
-
-.legend-box.available {
-  background: #2a2c38;
-  border: 1px solid #444;
-}
-
-.legend-box.selected {
-  background: var(--primary);
-}
-
-.legend-box.booked {
-  background: #15161b;
-  border: 1px solid #282828;
-}
-
-.seat-grid-container {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  max-height: 240px;
-  overflow-y: auto;
-  padding: 16px;
-  background: #0f1014;
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-md);
-  margin-bottom: 20px;
-}
-
-.seat-btn {
-  padding: 12px 6px;
-  background: #2a2c38;
-  color: var(--white);
-  border: 1px solid #444444;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 700;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  min-height: 44px;
-}
-
-.seat-btn:hover:not(:disabled) {
-  border-color: var(--primary);
-  background: #3a3d4e;
-  transform: translateY(-2px);
-}
-
-.seat-btn.selected {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #ffffff;
-  box-shadow: 0 0 12px var(--primary-glow);
-  transform: scale(1.05);
-}
-
-.seat-btn.booked {
-  background: #14151a;
-  color: #444444;
-  border-color: #20222a;
-  cursor: not-allowed;
-  opacity: 0.4;
-}
-
-.booking-summary-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 18px;
-  background: #111217;
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-md);
-  margin-bottom: 20px;
-  font-size: 14px;
-}
-
-.total-price-text {
-  color: var(--primary);
-  font-size: 20px;
-  font-weight: 800;
-}
-
-/* FLOATING TOAST */
-#toast-container {
-  position: fixed;
-  top: 24px;
-  right: 24px;
-  z-index: 3000;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.toast {
-  background: var(--surface-card);
-  border: 1px solid var(--glass-border);
-  color: var(--white);
-  padding: 14px 20px;
-  border-radius: var(--radius-md);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 280px;
-  animation: toastIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border-left: 4px solid var(--primary);
-}
-
-.toast.success {
-  border-left-color: var(--success-green);
-}
-
-.toast.error {
-  border-left-color: var(--danger-red);
-}
-
-@keyframes toastIn {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-
-/* RESPONSIVE DESIGN */
-@media screen and (min-width: 992px) {
-  .site-nav-centered {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-}
-
-@media screen and (max-width: 991px) {
-  .site-header {
-    flex-wrap: wrap;
-    padding: 12px 20px;
-    gap: 12px;
-  }
-
-  .site-nav-centered {
-    position: static;
-    transform: none;
-    width: 100%;
-    order: 3;
-    margin-top: 4px;
-  }
-
-  .nav-list-middle {
-    width: 100%;
-    overflow-x: auto;
-    white-space: nowrap;
-    justify-content: flex-start;
-    padding: 6px;
-    gap: 6px;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-
-  .nav-list-middle::-webkit-scrollbar {
-    display: none;
-  }
-
-  .nav-list-middle .nav-link {
-    flex-shrink: 0;
-    padding: 8px 14px;
-    font-size: 12px;
-  }
-}
-
-@media screen and (max-width: 576px) {
-  .form-row-dates {
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .site-header {
-    padding: 10px 14px;
-  }
-
-  .logo-link {
-    font-size: 18px;
-  }
-
-  .user-badge {
-    font-size: 12px;
-    padding: 6px 12px;
-  }
-
-  .btn {
-    padding: 8px 14px;
-    font-size: 12px;
-  }
-
-  .hero-section {
-    padding: 30px 14px;
-  }
-
-  .hero-title {
-    font-size: 24px;
-  }
-
-  .hero-subtitle {
-    font-size: 13px;
-    margin-bottom: 24px;
-  }
-
-  .search-card {
-    padding: 18px;
-  }
-
-  .trip-card-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 14px;
-  }
-
-  .trip-price-wrapper {
-    text-align: left;
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .booking-card {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 14px;
-  }
-
-  .booking-action-wrapper {
-    text-align: left;
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .modal-card {
-    padding: 18px;
-    width: 95%;
-  }
-
-  .payment-methods-grid {
-    grid-template-columns: 1fr;
-  }
-
-  #toast-container {
-    top: 12px;
-    right: 12px;
-    left: 12px;
-  }
-
-  .toast {
-    min-width: auto;
-    width: 100%;
-  }
 }
 
 /* SORT SELECTOR STYLES */
