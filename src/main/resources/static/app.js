@@ -17,6 +17,29 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+function isTokenExpired(token) {
+  if (!token) return true;
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return true;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    const payload = JSON.parse(jsonPayload);
+    if (payload.exp && Date.now() >= payload.exp * 1000) {
+      return true;
+    }
+    return false;
+  } catch (e) {
+    return true;
+  }
+}
+
 let pendingBookingCodeToCancel = null;
 let currentBaseSeatPrice = 750000;
 let holdTimerInterval = null;
@@ -1064,6 +1087,14 @@ function closeRegisterModal() {
 
 function checkLoginState() {
   const token = localStorage.getItem('vnr_jwt_token');
+  if (token && isTokenExpired(token)) {
+    console.warn('⚠️ Token đăng nhập đã hết hạn, tự động làm sạch phiên làm việc.');
+    localStorage.removeItem('vnr_jwt_token');
+    localStorage.removeItem('vnr_username');
+    localStorage.removeItem('vnr_user_profile');
+  }
+
+  const validToken = localStorage.getItem('vnr_jwt_token');
   const username = localStorage.getItem('vnr_username') || 'User';
 
   const authButtonContainer = document.querySelector('.auth-buttons');
@@ -1071,7 +1102,7 @@ function checkLoginState() {
 
   const themeBtnHTML = `<button type="button" id="theme-toggle-btn" class="btn-theme-toggle" title="Đổi Chế độ Sáng/Tối">🌙</button>`;
 
-  if (token) {
+  if (validToken) {
     authButtonContainer.innerHTML = `
       ${themeBtnHTML}
       <span class="user-badge">👤 ${escapeHtml(username)}</span>
@@ -1104,10 +1135,12 @@ function handleLogout() {
 // ==========================================
 function openBookingModal(tripId, basePrice = 750000, originId = null, destId = null) {
   const token = localStorage.getItem('vnr_jwt_token');
-  if (!token) {
-    showToast('🔒 Bạn cần Đăng nhập trước khi thực hiện Đặt vé!', 'error');
-    document.getElementById('login-modal').style.display = 'flex';
-    return;
+  if (token && isTokenExpired(token)) {
+    console.warn('⚠️ Token hết hạn, chuyển sang chế độ đặt vé khách vãng lai.');
+    localStorage.removeItem('vnr_jwt_token');
+    localStorage.removeItem('vnr_username');
+    localStorage.removeItem('vnr_user_profile');
+    checkLoginState();
   }
 
   currentBaseSeatPrice = basePrice;
@@ -1133,19 +1166,27 @@ function openBookingModal(tripId, basePrice = 750000, originId = null, destId = 
   document.getElementById('total-price-display').innerText = '0 VNĐ';
 
   const profileStr = localStorage.getItem('vnr_user_profile');
+  const nameInput = document.getElementById('customer-name');
+  const phoneInput = document.getElementById('customer-phone');
+  const emailInput = document.getElementById('customer-email');
+  const idCardInput = document.getElementById('passenger-idcard');
+
   if (profileStr) {
     try {
       const profile = JSON.parse(profileStr);
-      const nameInput = document.getElementById('customer-name');
-      const phoneInput = document.getElementById('customer-phone');
-      const emailInput = document.getElementById('customer-email');
-
-      if (nameInput && !nameInput.value) nameInput.value = profile.fullName || profile.username || '';
-      if (phoneInput && !phoneInput.value) phoneInput.value = profile.phone || '0987654321';
-      if (emailInput && !emailInput.value) emailInput.value = profile.email || `${profile.username}@gmail.com`;
+      if (nameInput) nameInput.value = profile.fullName || profile.username || '';
+      if (phoneInput) phoneInput.value = profile.phone || '0987654321';
+      if (emailInput) emailInput.value = profile.email || `${profile.username}@gmail.com`;
+      if (idCardInput && !idCardInput.value) idCardInput.value = '001200001234';
     } catch (e) {
       console.warn('Cannot parse profile:', e);
     }
+  } else {
+    // Tự động điền dữ liệu mẫu giúp test nhanh không cần gõ nhiều
+    if (nameInput && !nameInput.value) nameInput.value = 'Nguyễn Văn An';
+    if (phoneInput && !phoneInput.value) phoneInput.value = '0987654321';
+    if (emailInput && !emailInput.value) emailInput.value = 'khachhang@vnr.vn';
+    if (idCardInput && !idCardInput.value) idCardInput.value = '001200001234';
   }
 
   document.getElementById('booking-modal').style.display = 'flex';
@@ -1410,17 +1451,32 @@ async function handleCreateBooking(event) {
     const headers = {
       'Content-Type': 'application/json',
     };
-    if (token) {
+    if (token && !isTokenExpired(token)) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${API_BASE}/bookings`, {
+    let response = await fetch(`${API_BASE}/bookings`, {
       method: 'POST',
       headers: headers,
       body: JSON.stringify(bookingData),
     });
 
-    const data = await response.json();
+    let data;
+    if (response.status === 401) {
+      console.warn('⚠️ Token hết hạn hoặc không hợp lệ (401), tự động dọn dẹp và thử lại đơn vé...');
+      localStorage.removeItem('vnr_jwt_token');
+      localStorage.removeItem('vnr_username');
+      localStorage.removeItem('vnr_user_profile');
+      checkLoginState();
+      
+      response = await fetch(`${API_BASE}/bookings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bookingData),
+      });
+    }
+
+    data = await response.json();
 
     if (response.ok && data.result) {
       let booking = data.result;
