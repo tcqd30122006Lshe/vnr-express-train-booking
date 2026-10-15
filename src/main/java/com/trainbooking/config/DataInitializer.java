@@ -1,6 +1,7 @@
 package com.trainbooking.config;
 
 import com.trainbooking.entity.*;
+import com.trainbooking.repository.BookingRepository;
 import com.trainbooking.repository.RouteRepository;
 import com.trainbooking.repository.StationRepository;
 import com.trainbooking.repository.TrainRepository;
@@ -24,6 +25,7 @@ public class DataInitializer {
     private final TrainRepository trainRepository;
     private final RouteRepository routeRepository;
     private final TripRepository tripRepository;
+    private final BookingRepository bookingRepository;
     private final TransactionTemplate transactionTemplate;
 
     @PostConstruct
@@ -151,6 +153,53 @@ public class DataInitializer {
             seedSingleTrip("SE8-" + dateSuffix, se7, namBac, targetDate.atTime(19, 30));
         }
         log.info(">>> Seeded/Verified Daily Trips for 14 days starting from {} in both directions.", today);
+
+        // 6. Seed Demo Booking for PNR Lookup (BK-93FC2027)
+        if (bookingRepository.findByBookingCode("BK-93FC2027").isEmpty()) {
+            List<Trip> trips = tripRepository.findAll();
+            if (!trips.isEmpty()) {
+                Trip sampleTrip = trips.get(0);
+                Seat sampleSeat = null;
+                if (sampleTrip.getTrain() != null && sampleTrip.getTrain().getCarriages() != null) {
+                    for (Carriage c : sampleTrip.getTrain().getCarriages()) {
+                        if (c.getSeats() != null && !c.getSeats().isEmpty()) {
+                            sampleSeat = c.getSeats().get(0);
+                            break;
+                        }
+                    }
+                }
+
+                if (sampleSeat != null) {
+                    Booking sampleBooking = Booking.builder()
+                            .bookingCode("BK-93FC2027")
+                            .customerName("Nguyễn Văn An")
+                            .customerPhone("0987654321")
+                            .customerEmail("nguyenvanan@vnr.vn")
+                            .totalAmount(750000.0)
+                            .status("CONFIRMED")
+                            .createdAt(LocalDateTime.now())
+                            .build();
+
+                    Ticket sampleTicket = Ticket.builder()
+                            .booking(sampleBooking)
+                            .trip(sampleTrip)
+                            .seat(sampleSeat)
+                            .startStation(han)
+                            .endStation(dan)
+                            .startOrderIndex(1)
+                            .endOrderIndex(7)
+                            .passengerName("Nguyễn Văn An")
+                            .passengerIdCard("001200001234")
+                            .price(750000.0)
+                            .status("VALID")
+                            .build();
+
+                    sampleBooking.setTickets(new ArrayList<>(List.of(sampleTicket)));
+                    bookingRepository.save(sampleBooking);
+                    log.info(">>> Seeded demo booking BK-93FC2027 for PNR Lookup.");
+                }
+            }
+        }
     }
 
     private void seedSingleTrip(String code, Train train, Route route, LocalDateTime departureTime) {

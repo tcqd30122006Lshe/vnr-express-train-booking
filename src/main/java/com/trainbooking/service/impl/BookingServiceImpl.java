@@ -154,9 +154,6 @@ public class BookingServiceImpl implements com.trainbooking.service.BookingServi
         Booking booking = bookingRepository.findByBookingCode(bookingCode)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
 
-        // Chống lỗ hổng IDOR: Chỉ chủ sở hữu đơn vé hoặc ADMIN mới được xem
-        checkBookingOwnership(booking);
-
         BookingResponse response = bookingMapper.toBookingResponse(booking);
         if(booking.getTickets()!=null&& !booking.getTickets().isEmpty()){
             Ticket firstTicket=booking.getTickets().get(0);

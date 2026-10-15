@@ -39,7 +39,7 @@
             </a>
           </li>
           <li class="nav-item">
-            <a href="#pnr-section" class="nav-link" data-screen="pnr">
+            <a href="#pnr-lookup-card" class="nav-link" id="nav-pnr-lookup" data-screen="pnr">
               <span class="nav-icon">🔍</span> Tra Cứu Mã Vé
             </a>
           </li>
@@ -205,7 +205,7 @@
             <div class="pnr-header">
               <h3 class="pnr-title">🔍 Tra Cứu Đơn Vé Điện Tử PNR</h3>
               <p class="pnr-subtitle">
-                Nhập Mã đơn vé (VD: <code>BK-93FC2027</code>) và Số điện thoại để kiểm tra trạng thái vé điện tử.
+                Nhập Mã đơn vé (VD: <code style="cursor: pointer; text-decoration: underline; color: var(--primary);" onclick="document.getElementById('pnr-input-code').value='BK-93FC2027'; document.getElementById('pnr-input-phone').value='0987654321';" title="Bấm vào để điền thử ngay">BK-93FC2027</code>) và Số điện thoại để kiểm tra trạng thái vé điện tử.
               </p>
             </div>
             <div class="form-group">

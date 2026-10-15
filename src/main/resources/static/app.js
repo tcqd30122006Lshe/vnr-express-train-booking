@@ -179,7 +179,27 @@ document.addEventListener('DOMContentLoaded', () => {
     pill.addEventListener('click', (e) => {
       navPills.forEach((p) => p.classList.remove('active'));
       const targetPill = e.target.closest('.nav-link');
-      if (targetPill) targetPill.classList.add('active');
+      if (targetPill) {
+        targetPill.classList.add('active');
+        const screen = targetPill.getAttribute('data-screen');
+        if (screen === 'pnr') {
+          const tabPnr = document.getElementById('tab-pnr-mode');
+          if (tabPnr) tabPnr.click();
+          const pnrCard = document.getElementById('pnr-lookup-card');
+          if (pnrCard) {
+            pnrCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => {
+              const codeInput = document.getElementById('pnr-input-code');
+              if (codeInput) codeInput.focus();
+            }, 300);
+          }
+        } else if (screen === 'home') {
+          const tabOneWay = document.getElementById('tab-one-way');
+          if (tabOneWay) tabOneWay.click();
+          const hero = document.getElementById('hero-section');
+          if (hero) hero.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
     });
   });
 
@@ -344,8 +364,14 @@ function initJourneyTabs() {
     tabOneWay.addEventListener('click', () => {
       [tabOneWay, tabRoundTrip, tabPnrMode].forEach((t) => t && t.classList.remove('active'));
       tabOneWay.classList.add('active');
-      if (searchCardForm) searchCardForm.style.display = 'block';
-      if (pnrCard) pnrCard.style.display = 'none';
+      if (searchCardForm) {
+        searchCardForm.style.display = 'block';
+        searchCardForm.classList.remove('display-none');
+      }
+      if (pnrCard) {
+        pnrCard.style.display = 'none';
+        pnrCard.classList.add('display-none');
+      }
       if (returnDateGroup) returnDateGroup.style.display = 'none';
     });
   }
@@ -354,8 +380,14 @@ function initJourneyTabs() {
     tabRoundTrip.addEventListener('click', () => {
       [tabOneWay, tabRoundTrip, tabPnrMode].forEach((t) => t && t.classList.remove('active'));
       tabRoundTrip.classList.add('active');
-      if (searchCardForm) searchCardForm.style.display = 'block';
-      if (pnrCard) pnrCard.style.display = 'none';
+      if (searchCardForm) {
+        searchCardForm.style.display = 'block';
+        searchCardForm.classList.remove('display-none');
+      }
+      if (pnrCard) {
+        pnrCard.style.display = 'none';
+        pnrCard.classList.add('display-none');
+      }
       if (returnDateGroup) returnDateGroup.style.display = 'block';
 
       const departInput = document.getElementById('depart-date-select');
@@ -371,43 +403,154 @@ function initJourneyTabs() {
     tabPnrMode.addEventListener('click', () => {
       [tabOneWay, tabRoundTrip, tabPnrMode].forEach((t) => t && t.classList.remove('active'));
       tabPnrMode.classList.add('active');
-      if (searchCardForm) searchCardForm.style.display = 'none';
-      if (pnrCard) pnrCard.style.display = 'block';
+      if (searchCardForm) {
+        searchCardForm.style.display = 'none';
+        searchCardForm.classList.add('display-none');
+      }
+      if (pnrCard) {
+        pnrCard.style.display = 'block';
+        pnrCard.classList.remove('display-none');
+      }
+      setTimeout(() => {
+        const codeInput = document.getElementById('pnr-input-code');
+        if (codeInput) codeInput.focus();
+      }, 100);
     });
   }
 }
 
 // ==========================================
-// 4. TRA CỨU MÃ VÉ PNR LOOKUP WIDGET
+// 4. TRA CỨU MÃ VÉ PNR LOOKUP WIDGET (REAL API)
 // ==========================================
-function handleDoPnrLookup() {
-  const codeInput = document.getElementById('pnr-input-code').value.trim();
-  const phoneInput = document.getElementById('pnr-input-phone').value.trim();
+async function handleDoPnrLookup() {
+  const codeInput = document.getElementById('pnr-input-code');
+  const phoneInput = document.getElementById('pnr-input-phone');
   const outputElem = document.getElementById('pnr-result-output');
 
-  if (!codeInput) {
+  const rawCode = (codeInput ? codeInput.value : '').trim().toUpperCase().replace(/\s+/g, '');
+  const rawPhone = (phoneInput ? phoneInput.value : '').trim();
+
+  if (!rawCode) {
     showToast('Vui lòng nhập Mã đơn vé cần tra cứu (VD: BK-93FC2027)', 'error');
+    if (codeInput) codeInput.focus();
     return;
   }
 
-  outputElem.innerHTML = '<p style="color: var(--primary); font-size: 14px; font-weight: 600;">⏳ Đang kết nối tra cứu vé trên hệ thống VNR Express...</p>';
+  if (!outputElem) return;
 
-  setTimeout(() => {
-    const safeCode = escapeHtml(codeInput.toUpperCase());
-    const safePhone = escapeHtml(phoneInput || '0987654321');
+  outputElem.innerHTML = `
+    <div style="padding: 16px; text-align: center; color: var(--primary);">
+      <p style="font-size: 14px; font-weight: 600;">⏳ Đang kết nối tra cứu vé trên hệ thống VNR Express...</p>
+    </div>
+  `;
+
+  try {
+    const token = localStorage.getItem('vnr_jwt_token');
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(`${API_BASE}/bookings/${encodeURIComponent(rawCode)}`, {
+      method: 'GET',
+      headers: headers
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.result) {
+      const errMsg = (data && data.message) ? data.message : 'Không tìm thấy đơn vé với mã đã cung cấp.';
+      outputElem.innerHTML = `
+        <div style="background: rgba(239, 68, 68, 0.12); border: 1px solid var(--danger-red); padding: 18px; border-radius: var(--radius-md); text-align: left; margin-top: 15px;">
+          <h4 style="color: var(--danger-red); font-size: 16px; margin-bottom: 6px;">❌ Không Tìm Thấy Đơn Vé</h4>
+          <p style="font-size: 14px; color: var(--white); margin: 4px 0;">Mã đơn: <strong class="font-mono text-primary">${escapeHtml(rawCode)}</strong></p>
+          <p style="font-size: 13px; color: var(--gray-text); margin-top: 6px;">${escapeHtml(errMsg)}. Vui lòng kiểm tra lại mã đơn vé hoặc liên hệ tổng đài 1900 1520 để được hỗ trợ.</p>
+        </div>
+      `;
+      showToast('❌ Không tìm thấy thông tin đơn vé!', 'error');
+      return;
+    }
+
+    const booking = data.result;
+
+    // Kiểm tra số điện thoại (nếu khách có nhập)
+    if (rawPhone && booking.customerPhone && !booking.customerPhone.includes(rawPhone) && !rawPhone.includes(booking.customerPhone)) {
+      outputElem.innerHTML = `
+        <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid var(--accent-gold); padding: 18px; border-radius: var(--radius-md); text-align: left; margin-top: 15px;">
+          <h4 style="color: var(--accent-gold); font-size: 16px; margin-bottom: 6px;">⚠️ Số Điện Thoại Không Khớp</h4>
+          <p style="font-size: 13px; color: var(--white-muted);">Tìm thấy mã đơn vé <strong>${escapeHtml(rawCode)}</strong> nhưng số điện thoại bạn nhập không khớp với số điện thoại đặt vé. Vui lòng kiểm tra lại!</p>
+        </div>
+      `;
+      showToast('⚠️ Số điện thoại không khớp với hồ sơ đơn vé!', 'warning');
+      return;
+    }
+
+    const isCancelled = booking.status === 'CANCELLED';
+    const statusBadge = isCancelled
+      ? `<span class="booking-status-badge cancelled">ĐÃ HỦY</span>`
+      : `<span class="booking-status-badge" style="background: rgba(16, 185, 129, 0.2); color: var(--success-green); border: 1px solid var(--success-green);">ĐÃ XÁC NHẬN (THÀNH CÔNG)</span>`;
+
+    const formattedTotal = booking.totalAmount
+      ? Number(booking.totalAmount).toLocaleString('vi-VN')
+      : '0';
+
+    const trainTitle = `${booking.tripCode || ''} ${booking.trainName || ''}`.trim() || 'Tàu Thống Nhất';
+    const routeTitle = (booking.startStationName && booking.endStationName)
+      ? `${booking.startStationName} ➔ ${booking.endStationName}`
+      : 'Tuyến Bắc Nam';
+
+    let ticketsHTML = '';
+    if (booking.tickets && booking.tickets.length > 0) {
+      ticketsHTML = `
+        <div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border-color);">
+          <p style="font-size: 13px; color: var(--gray-text); margin-bottom: 6px;">Danh sách ghế / hành khách:</p>
+          <ul style="list-style: none; padding-left: 0; margin: 0; display: flex; flex-direction: column; gap: 6px;">
+            ${booking.tickets.map(t => `
+              <li style="font-size: 13px; color: var(--white); background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                <span>👤 <strong>${escapeHtml(t.passengerName || booking.customerName || 'Hành khách')}</strong> (Toa ${t.carriageNumber || 1} - Ghế ${t.seatNumber})</span>
+                <span style="color: var(--accent-gold); font-weight: 700;">${Number(t.price || 0).toLocaleString('vi-VN')} đ</span>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      `;
+    }
+
+    const safeCode = escapeHtml(booking.bookingCode);
+    const safeCustName = escapeHtml(booking.customerName || 'Hành khách');
+    const safeCustPhone = escapeHtml(booking.customerPhone || '');
+
     outputElem.innerHTML = `
-      <div style="background: var(--surface-dark); padding: 20px; border-radius: var(--radius-md); border-left: 5px solid var(--success-green); text-align: left;">
-        <h4 style="color: var(--success-green); font-size: 17px; margin-bottom: 6px;">🎟️ Đơn Vé Điện Tử HỢP LỆ</h4>
-        <p style="font-size: 14px; color: var(--white); margin-top: 4px;">Mã Đơn Vé: <strong class="font-mono" style="color: var(--primary);">${safeCode}</strong></p>
-        <p style="font-size: 13px; color: var(--gray-text); margin-top: 4px;">Trạng thái: <span class="booking-status-badge">ĐÃ XÁC NHẬN (THÀNH CÔNG)</span></p>
-        <p style="font-size: 14px; color: var(--white-muted); margin-top: 6px;">Hành trình: <strong>Ga Hà Nội ➔ Ga Đà Nẵng</strong> (Tàu SE1 - Ghế 12)</p>
-        <button type="button" class="btn btn-outline" style="margin-top: 14px; font-size: 13px;" onclick="openPrintModal('${safeCode}', 'Hành khách VNR', '${safePhone}', '750.000')">
-          🖨️ In Vé Điện Tử & Xem Mã QR
-        </button>
+      <div style="background: var(--surface-dark); padding: 22px; border-radius: var(--radius-md); border-left: 5px solid ${isCancelled ? 'var(--danger-red)' : 'var(--success-green)'}; text-align: left; margin-top: 15px; box-shadow: var(--shadow-md);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+          <h4 style="color: ${isCancelled ? 'var(--danger-red)' : 'var(--success-green)'}; font-size: 17px; margin: 0;">
+            ${isCancelled ? '❌ Đơn Vé Đã Bị Hủy' : '🎟️ Đơn Vé Điện Tử HỢP LỆ'}
+          </h4>
+          ${statusBadge}
+        </div>
+        <p style="font-size: 14px; color: var(--white); margin: 5px 0;">Mã Đơn Vé: <strong class="font-mono" style="color: var(--primary); font-size: 16px;">${safeCode}</strong></p>
+        <p style="font-size: 14px; color: var(--white-muted); margin: 5px 0;">Hành khách: <strong>${safeCustName}</strong> ${safeCustPhone ? `(${safeCustPhone})` : ''}</p>
+        <p style="font-size: 14px; color: var(--white-muted); margin: 5px 0;">Hành trình: <strong style="color: var(--white);">${escapeHtml(routeTitle)}</strong> (${escapeHtml(trainTitle)})</p>
+        <p style="font-size: 14px; color: var(--white-muted); margin: 5px 0;">Tổng tiền: <strong style="color: var(--accent-gold); font-size: 16px;">${formattedTotal} VNĐ</strong></p>
+        ${ticketsHTML}
+        ${!isCancelled ? `
+          <button type="button" class="btn btn-outline" style="margin-top: 16px; font-size: 13px;" onclick="openPrintModal('${safeCode}', '${safeCustName}', '${safeCustPhone}', '${formattedTotal}')">
+            🖨️ In Vé Điện Tử & Xem Mã QR
+          </button>
+        ` : ''}
       </div>
     `;
-    showToast(`✅ Tìm thấy dữ liệu vé mã ${safeCode}!`, 'success');
-  }, 600);
+
+    showToast(`✅ Đã tải thành công vé ${safeCode}!`, 'success');
+  } catch (err) {
+    console.error('Lỗi tra cứu vé:', err);
+    outputElem.innerHTML = `
+      <div style="background: rgba(239, 68, 68, 0.12); border: 1px solid var(--danger-red); padding: 16px; border-radius: var(--radius-md); text-align: left; margin-top: 15px;">
+        <p style="color: var(--danger-red); font-size: 14px; margin: 0;">⚠️ Không thể kết nối tới máy chủ tra cứu vé. Vui lòng kiểm tra lại đường truyền!</p>
+      </div>
+    `;
+    showToast('⚠️ Lỗi kết nối máy chủ tra cứu vé!', 'error');
+  }
 }
 
 // ==========================================
@@ -1486,12 +1629,12 @@ async function openPrintModal(code, name, phone, price) {
   if (phone) document.getElementById('print-customer-phone').innerText = phone;
   if (price) document.getElementById('print-total-price').innerText = `${price} VNĐ`;
 
-  const token = localStorage.getItem('vnr_jwt_token');
-  if (token && code) {
+  if (code) {
     try {
-      const res = await fetch(`${API_BASE}/bookings/${code}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const headers = {};
+      const token = localStorage.getItem('vnr_jwt_token');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await fetch(`${API_BASE}/bookings/${encodeURIComponent(code)}`, { headers });
       const data = await res.json();
       if (res.ok && data.result) {
         const b = data.result;
@@ -1503,7 +1646,7 @@ async function openPrintModal(code, name, phone, price) {
           if (routeElem) routeElem.innerText = `${b.startStationName} ➔ ${b.endStationName}`;
         }
         if (b.tickets && b.tickets.length > 0) {
-          const seatDescs = b.tickets.map(t => `Ghế ${t.seatNumber} (Toa ${t.carriageNumber})`).join(', ');
+          const seatDescs = b.tickets.map(t => `Ghế ${t.seatNumber} (Toa ${t.carriageNumber || 1})`).join(', ');
           document.getElementById('print-seat-number').innerText = seatDescs;
         }
         if (b.totalAmount) {
