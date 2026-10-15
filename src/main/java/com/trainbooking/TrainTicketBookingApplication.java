@@ -68,15 +68,28 @@ public class TrainTicketBookingApplication {
             }
         }
 
-        // Warning if Railway template variables were pasted literally without resolution
-        String mysqlHost = System.getenv("MYSQLHOST");
-        if (mysqlHost != null && mysqlHost.contains("${{")) {
-            System.err.println("⚠️ WARNING: MYSQLHOST contains unexpanded template: '" + mysqlHost + "'. In Railway, use '${{MySQL.RAILWAY_PRIVATE_DOMAIN}}' or the exact domain like 'mysql.railway.internal'!");
+        // Check if spring.datasource.url is still not set or is corrupted (e.g. jdbc:mysql://:/)
+        String currentUrl = System.getProperty("spring.datasource.url");
+        String envSpringUrl = System.getenv("SPRING_DATASOURCE_URL");
+
+        boolean isCorruptedOrEmpty = (currentUrl == null || currentUrl.isBlank() || currentUrl.contains("://:/"))
+                && (envSpringUrl == null || envSpringUrl.isBlank() || envSpringUrl.contains("://:/") || envSpringUrl.contains("localhost"));
+
+        boolean isRailway = System.getenv("RAILWAY_ENVIRONMENT") != null
+                || System.getenv("RAILWAY_SERVICE_ID") != null
+                || System.getenv("RAILWAY_PROJECT_ID") != null;
+
+        if (isRailway && isCorruptedOrEmpty) {
+            System.out.println(">>> Railway environment detected with missing/corrupted DB URL. Applying Railway MySQL default fallback...");
+            String defaultJdbc = "jdbc:mysql://mysql.railway.internal:3306/railway?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+            System.setProperty("spring.datasource.url", defaultJdbc);
+            System.setProperty("spring.datasource.username", "root");
+            System.setProperty("spring.datasource.password", "rjWyAsHMkZDjeUSgZaAfiHANTbYQiuDI");
+            System.out.println(">>> Fallback configured: " + defaultJdbc);
         }
 
         System.out.println(">>> Effective spring.datasource.url: " + (System.getProperty("spring.datasource.url") != null ? System.getProperty("spring.datasource.url") : System.getenv("SPRING_DATASOURCE_URL")));
-        System.out.println(">>> Effective MYSQLHOST: " + mysqlHost);
-        System.out.println(">>> Effective MYSQLPORT: " + System.getenv("MYSQLPORT"));
+        System.out.println(">>> Effective spring.datasource.username: " + (System.getProperty("spring.datasource.username") != null ? System.getProperty("spring.datasource.username") : System.getenv("SPRING_DATASOURCE_USERNAME")));
         System.out.println("==================================================================");
     }
 }
