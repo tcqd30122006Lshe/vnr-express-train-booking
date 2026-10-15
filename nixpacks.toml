@@ -1,0 +1,9 @@
+# Railway Nixpacks configuration for Java 21
+[phases.setup]
+nixPkgs = ["jdk21", "maven"]
+
+[phases.build]
+cmds = ["mvn clean package -DskipTests"]
+
+[start]
+cmd = "java -Dserver.port=$PORT -jar target/*.jar"
