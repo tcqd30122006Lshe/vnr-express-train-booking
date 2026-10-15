@@ -24,6 +24,12 @@ public class TrainTicketBookingApplication {
         if (mysqlUrl == null || mysqlUrl.isBlank()) {
             mysqlUrl = System.getenv("MYSQL_PUBLIC_URL");
         }
+        if (mysqlUrl == null || mysqlUrl.isBlank()) {
+            String springUrlEnv = System.getenv("SPRING_DATASOURCE_URL");
+            if (springUrlEnv != null && springUrlEnv.startsWith("mysql://")) {
+                mysqlUrl = springUrlEnv;
+            }
+        }
 
         if (mysqlUrl != null && !mysqlUrl.isBlank()) {
             mysqlUrl = mysqlUrl.trim();
@@ -57,17 +63,9 @@ public class TrainTicketBookingApplication {
                         System.out.println(">>> Auto-configured DB Username: " + parts[0]);
                     }
                 } catch (Exception e) {
-                    System.err.println("⚠️ Failed to parse MYSQL_URL: " + e.getMessage());
+                    System.err.println("⚠️ Failed to parse database URL: " + e.getMessage());
                 }
             }
-        }
-
-        // Fix if user provided SPRING_DATASOURCE_URL starting with mysql:// instead of jdbc:mysql://
-        String springDsUrl = System.getenv("SPRING_DATASOURCE_URL");
-        if (springDsUrl != null && springDsUrl.startsWith("mysql://")) {
-            String fixed = "jdbc:" + springDsUrl;
-            System.setProperty("spring.datasource.url", fixed);
-            System.out.println(">>> Auto-fixed SPRING_DATASOURCE_URL prefix to: " + fixed.replaceAll(":[^:@]+@", ":****@"));
         }
 
         // Warning if Railway template variables were pasted literally without resolution
