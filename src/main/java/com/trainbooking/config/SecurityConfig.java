@@ -26,7 +26,8 @@ public class SecurityConfig {
             "/api/v1/auth/introspect",
             "/api/v1/auth/logout",
             "/api/v1/trips/search",
-            "/api/v1/bookings"
+            "/api/v1/bookings",
+            "/api/v1/payments/**"
     };
     private final String[] PUBLIC_GET_POINTS={
             "/",

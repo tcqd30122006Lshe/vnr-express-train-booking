@@ -1,9 +1,13 @@
 package com.trainbooking.controller;
 
 import com.trainbooking.dto.response.ApiResponse;
+import com.trainbooking.dto.response.BookingResponse;
 import com.trainbooking.dto.response.PaymentResponse;
 import com.trainbooking.entity.Booking;
 import com.trainbooking.entity.Ticket;
+import com.trainbooking.exception.AppException;
+import com.trainbooking.exception.ErrorCode;
+import com.trainbooking.mapper.BookingMapper;
 import com.trainbooking.payment.vnpay.VnPayService;
 import com.trainbooking.repository.BookingRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,6 +27,7 @@ import java.util.Map;
 public class PaymentController {
     VnPayService vnPayService;
     BookingRepository bookingRepository;
+    BookingMapper bookingMapper;
 
     @GetMapping("/vnpay-pay/{bookingCode}")
     public ApiResponse<PaymentResponse> createVnPayPayment(@PathVariable String bookingCode, HttpServletRequest request){
@@ -39,6 +44,44 @@ public class PaymentController {
         boolean isSuccess = "00".equals(queryParams.get("vnp_ResponseCode")) && "OK".equalsIgnoreCase(paymentResponse.getStatus());
         String redirectUrl = "/index.html?paymentStatus=" + (isSuccess ? "success" : "failed") + "&bookingCode=" + (bookingCode != null ? bookingCode : "");
         response.sendRedirect(redirectUrl);
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    @RequestMapping(value = "/cash-pay/{bookingCode}", method = {RequestMethod.GET, RequestMethod.POST})
+    public ApiResponse<BookingResponse> payWithCash(@PathVariable String bookingCode) {
+        Booking booking = bookingRepository.findByBookingCode(bookingCode)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+
+        booking.setStatus("CONFIRMED");
+        if (booking.getTickets() != null) {
+            for (Ticket ticket : booking.getTickets()) {
+                ticket.setStatus("VALID");
+            }
+        }
+        bookingRepository.save(booking);
+
+        BookingResponse response = bookingMapper.toBookingResponse(booking);
+        if (booking.getTickets() != null && !booking.getTickets().isEmpty()) {
+            Ticket firstTicket = booking.getTickets().get(0);
+            if (firstTicket.getTrip() != null) {
+                response.setTripId(firstTicket.getTrip().getId());
+                response.setTripCode(firstTicket.getTrip().getTripCode());
+                if (firstTicket.getTrip().getTrain() != null) {
+                    response.setTrainName(firstTicket.getTrip().getTrain().getName());
+                }
+            }
+            if (firstTicket.getStartStation() != null) {
+                response.setStartStationName(firstTicket.getStartStation().getName());
+            }
+            if (firstTicket.getEndStation() != null) {
+                response.setEndStationName(firstTicket.getEndStation().getName());
+            }
+        }
+
+        return ApiResponse.<BookingResponse>builder()
+                .message("Thanh toán tiền mặt thành công")
+                .result(response)
+                .build();
     }
 
     @org.springframework.transaction.annotation.Transactional

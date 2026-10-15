@@ -1340,11 +1340,6 @@ async function handleCreateBooking(event) {
   event.preventDefault();
 
   const token = localStorage.getItem('vnr_jwt_token');
-  if (!token) {
-    showToast('🔒 Phiên đăng nhập đã hết hạn! Vui lòng đăng nhập lại.', 'error');
-    if (typeof openLoginModal === 'function') openLoginModal();
-    return;
-  }
 
   if (!selectedSeatIds || selectedSeatIds.length === 0) {
     const rawVal = document.getElementById('selected-seat-id')?.value;
@@ -1412,27 +1407,63 @@ async function handleCreateBooking(event) {
   showToast('⏳ Đang xử lý tạo đơn đặt vé...', 'info');
 
   try {
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_BASE}/bookings`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      headers: headers,
       body: JSON.stringify(bookingData),
     });
 
     const data = await response.json();
 
     if (response.ok && data.result) {
-      const booking = data.result;
+      let booking = data.result;
       const bookingCode = booking.bookingCode || 'VNR-OK';
       stopHoldTimer();
       document.getElementById('booking-modal').style.display = 'none';
 
       const payRadio = document.querySelector('input[name="paymentMethod"]:checked');
-      const paymentMethod = payRadio ? payRadio.value : 'VNPAY_SIMULATOR';
+      const paymentMethod = payRadio ? payRadio.value : 'CASH';
 
-      if (paymentMethod === 'VNPAY_SIMULATOR') {
+      if (paymentMethod === 'CASH') {
+        showToast(`💵 Đang xác nhận thanh toán tiền mặt cho mã vé ${bookingCode}...`, 'info');
+        try {
+          const cashRes = await fetch(`${API_BASE}/payments/cash-pay/${encodeURIComponent(bookingCode)}`, {
+            method: 'POST'
+          });
+          const cashJson = await cashRes.json();
+          if (cashRes.ok && cashJson.result) {
+            booking = cashJson.result;
+          }
+        } catch (cashErr) {
+          console.warn('Lỗi gọi cash-pay:', cashErr);
+        }
+
+        showToast(`🎉 Đặt vé & Thanh toán tiền mặt THÀNH CÔNG! Mã vé: ${bookingCode}`, 'success');
+
+        const formattedAmount = booking.totalAmount
+          ? Number(booking.totalAmount).toLocaleString('vi-VN')
+          : '0';
+
+        setTimeout(() => {
+          if (typeof openPrintModal === 'function') {
+            openPrintModal(bookingCode, name, phone, formattedAmount);
+          }
+        }, 400);
+
+        document.getElementById('booking-form').reset();
+        selectedSeatIds = [];
+        if (typeof loadMyBookings === 'function') {
+          loadMyBookings();
+        }
+        return;
+      } else if (paymentMethod === 'VNPAY_SIMULATOR') {
         showToast(`🎉 Đặt vé thành công! Đang chuyển sang cổng VNPAY Test...`, 'info');
         setTimeout(() => {
           window.location.href = `/vnpay-sandbox.html?bookingCode=${bookingCode}&amount=${booking.totalAmount || 0}`;
